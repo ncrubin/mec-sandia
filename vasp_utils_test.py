@@ -51,8 +51,10 @@ def test_compute_rs_sandia_carbon(input, expected):
     cell_vasp = vasp.read_vasp(filename)
     num_elec = sum(cell_vasp.get_atomic_numbers())
     if not all_elec:
-        num_carbon = len(cell_vasp.get_atomic_numbers())
-        num_elec = num_carbon * 4
+        num_carbon = len(np.where(cell_vasp.get_atomic_numbers()==6)[0])
+        # Not really clear if we should include the hydrogen atom here?
+        num_elec = 1 + num_carbon * 4
+    # Note converting to Borh, 
     rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
     assert np.isclose(rs, expected, atol=1e-2)
 
