@@ -13,8 +13,11 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
     rs = ((3 * volume) / (4*np.pi*num_valence_elec)) ** (1.0/3.0)
     return rs
 
-def read_vasp(poscar_file):
+def read_vasp(poscar_file) -> ase.Atoms:
     """ASE complains about deuterium in poscar file. So handrole
+
+    :param poscar_file: VASP POSCAR filename. (str)
+    :returns atoms: ase Atoms object.
     """
     with open(poscar_file, "r") as fid:
         info = fid.readline()
