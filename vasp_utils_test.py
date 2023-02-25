@@ -71,6 +71,17 @@ def test_compute_rs_sandia_deuterium():
     rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
     assert np.isclose(rs, 0.81, atol=1e-2)
 
+def test_local_reader():
+    filename = f"{_test_path}/vasp_data/C_POSCAR"
+    cell_vasp_local = local_read_vasp(filename)
+    num_elec = sum(cell_vasp_local.get_atomic_numbers())
+    rs = compute_wigner_seitz(cell_vasp_local.get_volume()/Bohr**3.0, num_elec)
+    assert np.isclose(rs, 0.81, atol=1e-2)
+    cell_vasp = vasp.read_vasp(filename)
+    num_elec = sum(cell_vasp.get_atomic_numbers())
+    rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
+    assert np.isclose(rs, 0.81, atol=1e-2)
+
 def test_box_length_from_target_density():
     target_density = 10 # g / cm^3
     # Deuterium
