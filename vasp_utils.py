@@ -4,7 +4,7 @@ from typing import Tuple
 import ase
 
 def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
-    """Extract wigner seitz radius from ase Atoms object.
+    """Extract wigner seitz radius from system parameters.
 
     :param volume: Cell volume in Bohr^3.
     :param num_valence_elec: Number of electrons in cell.
