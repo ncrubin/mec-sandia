@@ -15,6 +15,14 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
     return rs
 
 def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float):
+    """Compute cell length given target density
+
+    :param num_nuclei: number of nuclei (L in the overleaf)
+    :param mass_number: mass number of nuclei
+    :param density: target density in g/cm^3
+
+    :returns a: cell parameter
+    """
     return 1.04 * (num_nuclei * mass_number) ** (1.0/3.0)
 
 def read_vasp(poscar_file: str) -> ase.Atoms:
@@ -57,6 +65,12 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
         return atoms
 
 def read_kohn_sham_data(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+    """Read VASP eigenvalues and occupancies
+
+    :param filename: Filename containing eigenvalues and occupancies.
+
+    :returns (eigs, occs): Tuple of arrays containing eigenvalues and occupancies. 
+    """
     header_length = 8 # !!!!
     occs = []
     eigs = []
