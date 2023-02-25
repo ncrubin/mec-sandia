@@ -3,6 +3,7 @@ from typing import Tuple
 
 import ase
 
+
 def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
     """Extract wigner seitz radius from system parameters.
 
@@ -11,8 +12,9 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
 
     :returns rs: Wigner-Seitz radius
     """
-    rs = ((3 * volume) / (4*np.pi*num_valence_elec)) ** (1.0/3.0)
+    rs = ((3 * volume) / (4 * np.pi * num_valence_elec)) ** (1.0 / 3.0)
     return rs
+
 
 def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float):
     """Compute cell length given target density
@@ -23,7 +25,8 @@ def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density:
 
     :returns a: cell parameter
     """
-    return 1.04 * (num_nuclei * mass_number) ** (1.0/3.0)
+    return 1.04 * (num_nuclei * mass_number) ** (1.0 / 3.0)
+
 
 def read_vasp(poscar_file: str) -> ase.Atoms:
     """ASE complains about deuterium in poscar file. So handrole
@@ -34,10 +37,10 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
     with open(poscar_file, "r") as fid:
         info = fid.readline()
         lattice_constant = float(fid.readline())
-        lattice_vectors = np.zeros((3,3))
+        lattice_vectors = np.zeros((3, 3))
         for i in range(3):
             lattice_vectors[i] = [float(x) for x in fid.readline().split()]
-        basis_vectors = lattice_constant * lattice_vectors 
+        basis_vectors = lattice_constant * lattice_vectors
         atom_names = fid.readline().split()
         num_atoms = [int(x) for x in fid.readline().split()]
         assert len(num_atoms) == len(atom_names)
@@ -46,12 +49,12 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
         tot_atoms = sum(num_atoms)
         coords = []
         D_indx = np.where(atom_names)
-        for atom in range(tot_atoms): 
+        for atom in range(tot_atoms):
             coords.append([float(x) for x in fid.readline().split()])
         symbols = []
-        for sym, num_at in zip(atom_names, num_atoms): 
-            symbols += list(sym*num_at)
-        symbols_no_D = ["H" if name == "D" else name for name in symbols ]
+        for sym, num_at in zip(atom_names, num_atoms):
+            symbols += list(sym * num_at)
+        symbols_no_D = ["H" if name == "D" else name for name in symbols]
         D_indx = [indx for indx, name in enumerate(symbols) if name == "D"]
         atoms = ase.Atoms(symbols=symbols_no_D, cell=basis_vectors, pbc=True)
         atoms.set_scaled_positions(coords)
@@ -61,17 +64,18 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
         symbols = np.array(atoms.get_chemical_symbols())
         symbols[D_indx] = "D"
         # This could be overridden but not yet.
-        #atoms.set_chemical_symbols(symbols)
+        # atoms.set_chemical_symbols(symbols)
         return atoms
+
 
 def read_kohn_sham_data(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     """Read VASP eigenvalues and occupancies
 
     :param filename: Filename containing eigenvalues and occupancies.
 
-    :returns (eigs, occs): Tuple of arrays containing eigenvalues and occupancies. 
+    :returns (eigs, occs): Tuple of arrays containing eigenvalues and occupancies.
     """
-    header_length = 8 # !!!!
+    header_length = 8  # !!!!
     occs = []
     eigs = []
     num_eig = 0
