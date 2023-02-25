@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Tuple
 
 import ase
 
@@ -16,7 +17,7 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
 def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float):
     return 1.04 * (num_nuclei * mass_number) ** (1.0/3.0)
 
-def read_vasp(poscar_file) -> ase.Atoms:
+def read_vasp(poscar_file: str) -> ase.Atoms:
     """ASE complains about deuterium in poscar file. So handrole
 
     :param poscar_file: VASP POSCAR filename. (str)
@@ -54,3 +55,21 @@ def read_vasp(poscar_file) -> ase.Atoms:
         # This could be overridden but not yet.
         #atoms.set_chemical_symbols(symbols)
         return atoms
+
+def read_kohn_sham_data(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+    header_length = 8 # !!!!
+    occs = []
+    eigs = []
+    num_eig = 0
+    with open(filename, "r") as fid:
+        for indx in range(header_length):
+            line = fid.readline()
+            if indx == 5:
+                _, _, num_eig = [int(val) for val in line.split()]
+        assert num_eig > 0
+        for indx in range(num_eig):
+            line = fid.readline()
+            indx, eig, occ = line.split()
+            occs.append(float(occ))
+            eigs.append(float(eig))
+    return np.array(eigs), np.array(occs)

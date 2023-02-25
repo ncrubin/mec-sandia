@@ -6,7 +6,12 @@ from ase.build import bulk
 from ase.io import vasp
 from ase.units import Bohr
 
-from vasp_utils import compute_cell_length_from_density, compute_wigner_seitz, compute_cell_length_from_density
+from vasp_utils import (
+    compute_cell_length_from_density,
+    compute_wigner_seitz,
+    compute_cell_length_from_density,
+    read_kohn_sham_data
+    )
 from vasp_utils import read_vasp as local_read_vasp
 
 _test_path = os.path.dirname(os.path.abspath(__file__))
@@ -77,3 +82,12 @@ def test_box_length_from_target_density():
     # carbon 
     res = compute_cell_length_from_density(64, 12, 10)
     assert np.isclose(res, 9.52, atol=1e-2)
+
+def test_read_kohn_sham_data():
+    cell_vasp = vasp.read_vasp(f"{_test_path}/vasp_data/C_POSCAR")
+    num_carbon = len(np.where(cell_vasp.get_atomic_numbers()==6)[0])
+    num_elec = 1 + num_carbon * 4 # 1s orbitals are pseudized, only 4 electrons / carbon
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/vasp_data/C_10eV_EIGENVAL")
+    assert np.isclose(2*sum(occs), num_elec)
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/vasp_data/C_1eV_EIGENVAL")
+    assert np.isclose(2*sum(occs), num_elec)
