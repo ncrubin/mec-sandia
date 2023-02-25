@@ -7,6 +7,7 @@ from ase.io import vasp
 from ase.units import Bohr
 
 from vasp_utils import compute_wigner_seitz
+from vasp_utils import read_vasp as local_read_vasp
 
 _test_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,13 +55,14 @@ def test_compute_rs_sandia_carbon(input, expected):
         num_carbon = len(np.where(cell_vasp.get_atomic_numbers()==6)[0])
         # Not really clear if we should include the hydrogen atom here?
         num_elec = 1 + num_carbon * 4
-    # Note converting to Borh, 
+    # Note converting to Bohr, 
     rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
     assert np.isclose(rs, expected, atol=1e-2)
 
-# def test_compute_rs_sandia_deuterium():
-#     filename = f"{_test_path}/vasp_data/D_POSCAR"
-#     cell_vasp = vasp.read_vasp(filename)
-#     num_elec = sum(cell_vasp.get_atomic_numbers())
-#     rs = compute_wigner_seitz(cell_vasp, num_elec)
-#     assert np.isclose(rs, 1.0, atol=1e-2)
+def test_compute_rs_sandia_deuterium():
+    filename = f"{_test_path}/vasp_data/D_POSCAR"
+    cell_vasp = local_read_vasp(filename)
+    print(cell_vasp.get_chemical_symbols())
+    num_elec = sum(cell_vasp.get_atomic_numbers())
+    rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
+    assert np.isclose(rs, 0.81, atol=1e-2)
