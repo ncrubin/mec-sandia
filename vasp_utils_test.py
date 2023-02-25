@@ -6,7 +6,7 @@ from ase.build import bulk
 from ase.io import vasp
 from ase.units import Bohr
 
-from vasp_utils import compute_wigner_seitz
+from vasp_utils import compute_cell_length_from_density, compute_wigner_seitz, compute_cell_length_from_density
 from vasp_utils import read_vasp as local_read_vasp
 
 _test_path = os.path.dirname(os.path.abspath(__file__))
@@ -62,7 +62,18 @@ def test_compute_rs_sandia_carbon(input, expected):
 def test_compute_rs_sandia_deuterium():
     filename = f"{_test_path}/vasp_data/D_POSCAR"
     cell_vasp = local_read_vasp(filename)
-    print(cell_vasp.get_chemical_symbols())
     num_elec = sum(cell_vasp.get_atomic_numbers())
     rs = compute_wigner_seitz(cell_vasp.get_volume()/Bohr**3.0, num_elec)
     assert np.isclose(rs, 0.81, atol=1e-2)
+
+def test_box_length_from_target_density():
+    target_density = 10 # g / cm^3
+    # Deuterium
+    res = compute_cell_length_from_density(64, 2, 10)
+    assert np.isclose(res, 5.24, atol=1e-2)
+    # beryllium 
+    res = compute_cell_length_from_density(64, 9, 10)
+    assert np.isclose(res, 8.65, atol=1e-2)
+    # carbon 
+    res = compute_cell_length_from_density(64, 12, 10)
+    assert np.isclose(res, 9.52, atol=1e-2)

@@ -13,6 +13,9 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
     rs = ((3 * volume) / (4*np.pi*num_valence_elec)) ** (1.0/3.0)
     return rs
 
+def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float):
+    return 1.04 * (num_nuclei * mass_number) ** (1.0/3.0)
+
 def read_vasp(poscar_file) -> ase.Atoms:
     """ASE complains about deuterium in poscar file. So handrole
 
