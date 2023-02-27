@@ -75,5 +75,5 @@ class DensityMatrix:
 
     def compute_electron_number(self) -> Tuple[float, float]:
         """Compute average electron number from statistical sample of density matrix"""
-        nav = [len(occ_str)*weights for occ_str, weight in zip(self.occ_strings, self.weights)]
+        nav = [len(occ_str)*weight for occ_str, weight in zip(self.occ_strings, self.weights)]
         return float(np.mean(nav)), np.std(nav, ddof=1) / (self.num_samples**0.5)
