@@ -71,4 +71,13 @@ def test_sampling_canonical():
     dm = DensityMatrix.build_canonical(occs, num_samples, target_num_elec)
     nav, nav_err = dm.compute_electron_number()
     assert np.isclose(nav, target_num_elec)
-    dm_exact = DensityMatrix.build_canonical_exact(system.eigenvalues, num_samples, target_num_elec)
+    dm_exact = DensityMatrix.build_canonical_exact(system.eigenvalues, beta, target_num_elec)
+    assert np.isclose(nav, target_num_elec)
+    fermi, fermi_err = dm.compute_occupations()
+    ref_occ, _ = dm_exact.compute_occupations()
+    assert np.allclose(fermi, ref_occ, atol=0.02)
+    kinetic_energy, kinetic_energy_err = dm.contract_diagonal_one_body(
+        system.eigenvalues
+    )
+    ref_kin, _ = dm_exact.contract_diagonal_one_body(system.eigenvalues)
+    assert np.isclose(kinetic_energy, ref_kin, atol=2*kinetic_energy_err)
