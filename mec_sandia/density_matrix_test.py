@@ -99,7 +99,7 @@ _test_params_sandia = [(10, 0.17220781705), (1, 0.017220781705)]
 @pytest.mark.parametrize("input,expected", _test_params_sandia)
 def test_compute_fermi_temperature(input, expected):
     temp = input  # eV
-    cell_vasp = read_vasp(f"{_test_path}/vasp_data/C_POSCAR")
+    cell_vasp = read_vasp(f"{_test_path}/../vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = 1 + num_carbon * 4
     rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
@@ -116,7 +116,7 @@ _test_params_sandia = [(10), (1)]
 
 
 @pytest.mark.parametrize("temp", _test_params_sandia)
-def test_compute_fermi_temperature(temp):
+def test_vasp_dms(temp):
     cell_vasp = read_vasp(f"{_test_path}/../vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = 1 + num_carbon * 4

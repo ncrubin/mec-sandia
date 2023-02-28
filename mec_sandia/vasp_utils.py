@@ -1,7 +1,7 @@
-import numpy as np
 from typing import Tuple
 
 import ase
+import numpy as np
 
 
 def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
@@ -16,7 +16,7 @@ def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
     return rs
 
 
-def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float):
+def compute_cell_length_from_density(num_nuclei: int, mass_number: int, density: float) -> float:
     """Compute cell length given target density
 
     :param num_nuclei: number of nuclei (L in the overleaf)

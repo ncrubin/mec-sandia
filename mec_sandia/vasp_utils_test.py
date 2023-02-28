@@ -6,8 +6,11 @@ from ase.build import bulk
 from ase.io import vasp
 from ase.units import Bohr
 
-from mec_sandia.vasp_utils import (compute_cell_length_from_density,
-                                   compute_wigner_seitz, read_kohn_sham_data)
+from mec_sandia.vasp_utils import (
+    compute_cell_length_from_density,
+    compute_wigner_seitz,
+    read_kohn_sham_data,
+)
 from mec_sandia.vasp_utils import read_vasp as local_read_vasp
 
 _test_path = os.path.dirname(os.path.abspath(__file__))

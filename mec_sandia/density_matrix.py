@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import itertools
 import numpy as np
@@ -6,22 +7,40 @@ from typing import List, Tuple, Union
 import scipy.optimize
 
 
-def fermi_factor(ek, mu, beta):
+def fermi_factor(
+    ek: Union[float, np.ndarray],
+    mu: float,
+    beta: float,
+) -> Union[float, np.ndarray]:
     return 1.0 / (np.exp(beta * (ek - mu)) + 1)
 
 
-def compute_electron_number(mu, eigs, beta):
+def compute_electron_number(
+    mu: float,
+    eigs: np.ndarray,
+    beta: float,
+) -> float:
     return 2 * sum(fermi_factor(eigs, mu, beta))
 
 
-def cost_function(mu, eigs, beta, target_electron_number):
+def _chem_pot_cost_function(
+    mu: float,
+    eigs: np.ndarray,
+    beta: float,
+    target_electron_number: int,
+) -> float:
     return compute_electron_number(mu, eigs, beta) - target_electron_number
 
 
-def find_chemical_potential(eigs, beta, target_num_elec, mu0=0.0):
+def find_chemical_potential(
+    eigs: np.ndarray,
+    beta: float,
+    target_num_elec: int,
+    mu0=0.0,
+) -> float:
     r"""Find solution of :math:`<N> = \sum_i f(e_i, mu)`"""
     return scipy.optimize.fsolve(
-        cost_function, mu0, args=(eigs, beta, target_num_elec)
+        _chem_pot_cost_function, mu0, args=(eigs, beta, target_num_elec)
     )[0]
 
 
@@ -32,7 +51,9 @@ class DensityMatrix:
     weights: np.ndarray
 
     @staticmethod
-    def build_grand_canonical(fermi_occupations: np.ndarray, num_samples: int):
+    def build_grand_canonical(
+        fermi_occupations: np.ndarray, num_samples: int
+    ) -> DensityMatrix:
         occ_string = []
         # Use spin orbitals abab ordering
         num_spin_orbs = 2 * len(fermi_occupations)
@@ -55,7 +76,9 @@ class DensityMatrix:
         )
 
     @staticmethod
-    def build_canonical(fermi_occupations: np.ndarray, num_samples: int, target_num_elec: int):
+    def build_canonical(
+        fermi_occupations: np.ndarray, num_samples: int, target_num_elec: int
+    ) -> DensityMatrix:
         occ_string = []
         # Use spin orbitals abab ordering
         num_spin_orbs = 2 * len(fermi_occupations)
@@ -79,7 +102,9 @@ class DensityMatrix:
         )
 
     @staticmethod
-    def build_grand_canonical_exact(eigenvalues: np.ndarray, mu: float, beta: float):
+    def build_grand_canonical_exact(
+        eigenvalues: np.ndarray, mu: float, beta: float
+    ) -> DensityMatrix:
         occ_string = []
         weights = []
         # Use spin orbitals abab ordering
@@ -89,9 +114,9 @@ class DensityMatrix:
         spin_eig[::2] = eigenvalues
         spin_eig[1::2] = eigenvalues
         Zgc = 0
-        for nelec in range(0, num_spin_orbs+1):
+        for nelec in range(0, num_spin_orbs + 1):
             for occ_str in itertools.combinations(range(0, num_spin_orbs), nelec):
-                boltzmann = np.exp(-beta*(sum(spin_eig[list(occ_str)])-mu*nelec))
+                boltzmann = np.exp(-beta * (sum(spin_eig[list(occ_str)]) - mu * nelec))
                 Zgc += boltzmann
                 weights.append(np.array(boltzmann))
                 occ_string.append(np.array(occ_str))
@@ -99,11 +124,13 @@ class DensityMatrix:
         return DensityMatrix(
             num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
-            weights=len(occ_string)*np.array(weights)/Zgc,
+            weights=len(occ_string) * np.array(weights) / Zgc,
         )
 
     @staticmethod
-    def build_canonical_exact(eigenvalues: np.ndarray, beta: float, num_elec: int):
+    def build_canonical_exact(
+        eigenvalues: np.ndarray, beta: float, num_elec: int
+    ) -> DensityMatrix:
         occ_string = []
         weights = []
         # Use spin orbitals abab ordering
@@ -114,7 +141,7 @@ class DensityMatrix:
         spin_eig[1::2] = eigenvalues
         Z = 0
         for occ_str in itertools.combinations(range(0, num_spin_orbs), num_elec):
-            boltzmann = np.exp(-beta*(sum(spin_eig[list(occ_str)])))
+            boltzmann = np.exp(-beta * (sum(spin_eig[list(occ_str)])))
             Z += boltzmann
             weights.append(np.array(boltzmann))
             occ_string.append(np.array(occ_str))
@@ -122,7 +149,7 @@ class DensityMatrix:
         return DensityMatrix(
             num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
-            weights=len(occ_string)*np.array(weights)/Z,
+            weights=len(occ_string) * np.array(weights) / Z,
         )
 
     @property
