@@ -4,7 +4,7 @@ import ase
 import numpy as np
 
 
-def compute_wigner_seitz(volume: float, num_valence_elec: int) -> float:
+def compute_wigner_seitz_radius(volume: float, num_valence_elec: int) -> float:
     """Extract wigner seitz radius from system parameters.
 
     :param volume: Cell volume in Bohr^3.

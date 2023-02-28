@@ -8,7 +8,7 @@ from ase.units import Bohr
 
 from mec_sandia.vasp_utils import (
     compute_cell_length_from_density,
-    compute_wigner_seitz,
+    compute_wigner_seitz_radius,
     read_kohn_sham_data,
 )
 from mec_sandia.vasp_utils import read_vasp as local_read_vasp
@@ -36,11 +36,11 @@ def test_compute_rs(input, expected):
     if all_elec:
         assert sum(cell.get_atomic_numbers()) == valence
     assert np.isclose(volume, cell.get_volume())
-    rs = compute_wigner_seitz(cell.get_volume(), valence)
+    rs = compute_wigner_seitz_radius(cell.get_volume(), valence)
     assert np.isclose(rs, expected, atol=1e-2)
     vasp.write_vasp(f"{atom}.POSCAR", cell)
     cell_vasp = vasp.read_vasp(f"{atom}.POSCAR")
-    rs = compute_wigner_seitz(cell.get_volume(), valence)
+    rs = compute_wigner_seitz_radius(cell.get_volume(), valence)
     assert np.isclose(rs, expected, atol=1e-2)
     try:
         os.remove(f"{atom}.POSCAR")
@@ -67,7 +67,7 @@ def test_compute_rs_sandia_carbon(input, expected):
         # Not really clear if we should include the hydrogen atom here?
         num_elec = 1 + num_carbon * 4
     # Note converting to Bohr,
-    rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
+    rs = compute_wigner_seitz_radius(cell_vasp.get_volume() / Bohr**3.0, num_elec)
     assert np.isclose(rs, expected, atol=1e-2)
 
 
@@ -75,7 +75,7 @@ def test_compute_rs_sandia_deuterium():
     filename = f"{_test_path}/../vasp_data/D_POSCAR"
     cell_vasp = local_read_vasp(filename)
     num_elec = sum(cell_vasp.get_atomic_numbers())
-    rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
+    rs = compute_wigner_seitz_radius(cell_vasp.get_volume() / Bohr**3.0, num_elec)
     assert np.isclose(rs, 0.81, atol=1e-2)
 
 
@@ -83,11 +83,11 @@ def test_local_reader():
     filename = f"{_test_path}/../vasp_data/C_POSCAR"
     cell_vasp_local = local_read_vasp(filename)
     num_elec = sum(cell_vasp_local.get_atomic_numbers())
-    rs = compute_wigner_seitz(cell_vasp_local.get_volume() / Bohr**3.0, num_elec)
+    rs = compute_wigner_seitz_radius(cell_vasp_local.get_volume() / Bohr**3.0, num_elec)
     assert np.isclose(rs, 0.81, atol=1e-2)
     cell_vasp = vasp.read_vasp(filename)
     num_elec = sum(cell_vasp.get_atomic_numbers())
-    rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
+    rs = compute_wigner_seitz_radius(cell_vasp.get_volume() / Bohr**3.0, num_elec)
     assert np.isclose(rs, 0.81, atol=1e-2)
 
 

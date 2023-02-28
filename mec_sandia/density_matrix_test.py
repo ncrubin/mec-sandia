@@ -11,7 +11,7 @@ from mec_sandia.density_matrix import (
     find_chemical_potential,
 )
 from mec_sandia.ueg import UEG, calc_fermi_energy, calc_theta_from_beta
-from mec_sandia.vasp_utils import compute_wigner_seitz, read_kohn_sham_data, read_vasp
+from mec_sandia.vasp_utils import compute_wigner_seitz_radius, read_kohn_sham_data, read_vasp
 
 
 def test_chemical_potential():
@@ -102,7 +102,7 @@ def test_compute_fermi_temperature(input, expected):
     cell_vasp = read_vasp(f"{_test_path}/../vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = 1 + num_carbon * 4
-    rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
+    rs = compute_wigner_seitz_radius(cell_vasp.get_volume() / Bohr**3.0, num_elec)
     fermi_energy = calc_fermi_energy(rs)
     assert np.isclose(fermi_energy, 2.134010122410822)
     T_Ha = temp / Hartree
