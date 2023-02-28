@@ -1,16 +1,17 @@
-from ase.units import Bohr, Hartree
-import numpy as np
 import os
-import pytest
 
-from density_matrix import (
+import numpy as np
+import pytest
+from ase.units import Bohr, Hartree
+
+from mec_sandia.density_matrix import (
+    DensityMatrix,
+    compute_electron_number,
     fermi_factor,
     find_chemical_potential,
-    compute_electron_number,
-    DensityMatrix,
 )
-from vasp_utils import read_kohn_sham_data, read_vasp, compute_wigner_seitz
-from ueg import UEG, calc_beta_from_theta, calc_fermi_energy, calc_theta_from_beta
+from mec_sandia.ueg import UEG, calc_fermi_energy, calc_theta_from_beta
+from mec_sandia.vasp_utils import compute_wigner_seitz, read_kohn_sham_data, read_vasp
 
 
 def test_chemical_potential():
@@ -42,7 +43,8 @@ def test_sampling_grand_canonical():
         system.eigenvalues
     )
     reference_energy = 2 * sum(system.eigenvalues * occs)
-    assert np.isclose(kinetic_energy, reference_energy, atol=2*kinetic_energy_err)
+    assert np.isclose(kinetic_energy, reference_energy, atol=2 * kinetic_energy_err)
+
 
 def test_exact_grand_canonical():
     target_num_elec = 4
@@ -61,7 +63,8 @@ def test_exact_grand_canonical():
         system.eigenvalues
     )
     reference_energy = 2 * sum(system.eigenvalues * occs)
-    assert np.isclose(kinetic_energy, reference_energy, atol=2*kinetic_energy_err)
+    assert np.isclose(kinetic_energy, reference_energy, atol=2 * kinetic_energy_err)
+
 
 def test_sampling_canonical():
     target_num_elec = 4
@@ -75,7 +78,9 @@ def test_sampling_canonical():
     dm = DensityMatrix.build_canonical(occs, num_samples, target_num_elec)
     nav, nav_err = dm.compute_electron_number()
     assert np.isclose(nav, target_num_elec)
-    dm_exact = DensityMatrix.build_canonical_exact(system.eigenvalues, beta, target_num_elec)
+    dm_exact = DensityMatrix.build_canonical_exact(
+        system.eigenvalues, beta, target_num_elec
+    )
     assert np.isclose(nav, target_num_elec)
     fermi, fermi_err = dm.compute_occupations()
     ref_occ, _ = dm_exact.compute_occupations()
@@ -84,15 +89,16 @@ def test_sampling_canonical():
         system.eigenvalues
     )
     ref_kin, _ = dm_exact.contract_diagonal_one_body(system.eigenvalues)
-    assert np.isclose(kinetic_energy, ref_kin, atol=2*kinetic_energy_err)
+    assert np.isclose(kinetic_energy, ref_kin, atol=2 * kinetic_energy_err)
+
 
 _test_path = os.path.dirname(os.path.abspath(__file__))
-_test_params_sandia = [
-    (10, 0.17220781705), (1, 0.017220781705)
-]
+_test_params_sandia = [(10, 0.17220781705), (1, 0.017220781705)]
+
+
 @pytest.mark.parametrize("input,expected", _test_params_sandia)
 def test_compute_fermi_temperature(input, expected):
-    temp = input # eV
+    temp = input  # eV
     cell_vasp = read_vasp(f"{_test_path}/vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = 1 + num_carbon * 4
@@ -104,31 +110,30 @@ def test_compute_fermi_temperature(input, expected):
     theta = calc_theta_from_beta(beta, rs)
     assert np.isclose(theta, expected)
 
+
 _test_path = os.path.dirname(os.path.abspath(__file__))
-_test_params_sandia = [
-    (10), (1)
-]
+_test_params_sandia = [(10), (1)]
+
+
 @pytest.mark.parametrize("temp", _test_params_sandia)
 def test_compute_fermi_temperature(temp):
-    cell_vasp = read_vasp(f"{_test_path}/vasp_data/C_POSCAR")
+    cell_vasp = read_vasp(f"{_test_path}/../vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = 1 + num_carbon * 4
-    eigs, occs = read_kohn_sham_data(f"{_test_path}/vasp_data/C_{temp}eV_EIGENVAL")
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/../vasp_data/C_{temp}eV_EIGENVAL")
     num_samples = 10000
     # Test grand canonical ensemble
     target_num_elec = num_elec
     np.random.seed(7)
     dm = DensityMatrix.build_grand_canonical(occs, num_samples)
     nav, nav_err = dm.compute_electron_number()
-    assert np.isclose(nav, target_num_elec, atol=2*nav_err)
+    assert np.isclose(nav, target_num_elec, atol=2 * nav_err)
     fermi, fermi_err = dm.compute_occupations()
     assert np.allclose(fermi[::2], occs, atol=0.02)
     assert np.allclose(fermi[1::2], occs, atol=0.02)
-    kinetic_energy, kinetic_energy_err = dm.contract_diagonal_one_body(
-        eigs 
-    )
+    kinetic_energy, kinetic_energy_err = dm.contract_diagonal_one_body(eigs)
     reference_energy = 2 * sum(eigs * occs)
-    assert np.isclose(kinetic_energy, reference_energy, atol=2*kinetic_energy_err)
+    assert np.isclose(kinetic_energy, reference_energy, atol=2 * kinetic_energy_err)
     # Test canonical ensemble
     target_num_elec = num_elec
     dm = DensityMatrix.build_canonical(occs, num_samples, target_num_elec)

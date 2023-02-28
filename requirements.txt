@@ -2,3 +2,4 @@ ase
 numpy
 scipy
 pytest
+sympy

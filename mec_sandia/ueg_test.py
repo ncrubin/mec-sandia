@@ -1,6 +1,6 @@
 import numpy as np
 
-from ueg import UEG
+from mec_sandia.ueg import UEG
 
 def test_build():
     ueg_inst = UEG.build(14, 1.0, 10)

@@ -1,18 +1,14 @@
-import numpy as np
 import os
-import pytest
 
+import numpy as np
+import pytest
 from ase.build import bulk
 from ase.io import vasp
 from ase.units import Bohr
 
-from vasp_utils import (
-    compute_cell_length_from_density,
-    compute_wigner_seitz,
-    compute_cell_length_from_density,
-    read_kohn_sham_data,
-)
-from vasp_utils import read_vasp as local_read_vasp
+from mec_sandia.vasp_utils import (compute_cell_length_from_density,
+                                   compute_wigner_seitz, read_kohn_sham_data)
+from mec_sandia.vasp_utils import read_vasp as local_read_vasp
 
 _test_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -50,12 +46,14 @@ def test_compute_rs(input, expected):
 
 
 _test_params_sandia = [
-    ((f"{_test_path}/vasp_data/C_POSCAR", True), 0.81),
+    ((f"{_test_path}/../vasp_data/C_POSCAR", True), 0.81),
     (
-        (f"{_test_path}/vasp_data/C_POSCAR", False),
+        (f"{_test_path}/../vasp_data/C_POSCAR", False),
         0.93,
     ),  # 1s Carbon electrons are pseudized
 ]
+
+
 @pytest.mark.parametrize("input,expected", _test_params_sandia)
 def test_compute_rs_sandia_carbon(input, expected):
     filename, all_elec = input
@@ -71,7 +69,7 @@ def test_compute_rs_sandia_carbon(input, expected):
 
 
 def test_compute_rs_sandia_deuterium():
-    filename = f"{_test_path}/vasp_data/D_POSCAR"
+    filename = f"{_test_path}/../vasp_data/D_POSCAR"
     cell_vasp = local_read_vasp(filename)
     num_elec = sum(cell_vasp.get_atomic_numbers())
     rs = compute_wigner_seitz(cell_vasp.get_volume() / Bohr**3.0, num_elec)
@@ -79,7 +77,7 @@ def test_compute_rs_sandia_deuterium():
 
 
 def test_local_reader():
-    filename = f"{_test_path}/vasp_data/C_POSCAR"
+    filename = f"{_test_path}/../vasp_data/C_POSCAR"
     cell_vasp_local = local_read_vasp(filename)
     num_elec = sum(cell_vasp_local.get_atomic_numbers())
     rs = compute_wigner_seitz(cell_vasp_local.get_volume() / Bohr**3.0, num_elec)
@@ -104,12 +102,12 @@ def test_box_length_from_target_density():
 
 
 def test_read_kohn_sham_data():
-    cell_vasp = vasp.read_vasp(f"{_test_path}/vasp_data/C_POSCAR")
+    cell_vasp = vasp.read_vasp(f"{_test_path}/../vasp_data/C_POSCAR")
     num_carbon = len(np.where(cell_vasp.get_atomic_numbers() == 6)[0])
     num_elec = (
         1 + num_carbon * 4
     )  # 1s orbitals are pseudized, only 4 electrons / carbon
-    eigs, occs = read_kohn_sham_data(f"{_test_path}/vasp_data/C_10eV_EIGENVAL")
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/../vasp_data/C_10eV_EIGENVAL")
     assert np.isclose(2 * sum(occs), num_elec)
-    eigs, occs = read_kohn_sham_data(f"{_test_path}/vasp_data/C_1eV_EIGENVAL")
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/../vasp_data/C_1eV_EIGENVAL")
     assert np.isclose(2 * sum(occs), num_elec)
