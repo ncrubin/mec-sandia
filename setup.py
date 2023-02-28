@@ -1,12 +1,12 @@
 """
-package for kpoint_eri
+package for mec_sandia
 
 """
 
 import io
 import re
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def version_number(path: str) -> str:
@@ -42,7 +42,7 @@ def main() -> None:
     requirements = [r.strip() for r in requirements_buffer]
 
     setup(
-        name='kpoint_eri',
+        name='mec_sandia',
         version=__version__,
         author='Folks',
         author_email='rubinnc0@gmail.com',
@@ -50,7 +50,7 @@ def main() -> None:
         long_description=long_description,
         install_requires=None,
         license='Apache 2',
-        packages=find_packages(),
+        packages=["mec_sandia"],
         )
 
 
