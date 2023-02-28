@@ -129,7 +129,7 @@ class DensityMatrix:
     def num_samples(self) -> int:
         return len(self.occ_strings)
 
-    def compute_occupations(self) -> Tuple[float, float]:
+    def compute_occupations(self) -> Tuple[np.ndarray, np.ndarray]:
         """Compute average electron number from statistical sample of density matrix"""
         occupations = np.zeros((self.num_samples, self.num_spin_orbs))
         for isample in range(self.num_samples):

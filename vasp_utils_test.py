@@ -49,7 +49,6 @@ def test_compute_rs(input, expected):
         pass
 
 
-# @pytest.mark.parametrize("input,expected", [(f"{_test_path}/vasp_data/C_POSCAR", 1.0), (
 _test_params_sandia = [
     ((f"{_test_path}/vasp_data/C_POSCAR", True), 0.81),
     (
@@ -57,8 +56,6 @@ _test_params_sandia = [
         0.93,
     ),  # 1s Carbon electrons are pseudized
 ]
-
-
 @pytest.mark.parametrize("input,expected", _test_params_sandia)
 def test_compute_rs_sandia_carbon(input, expected):
     filename, all_elec = input

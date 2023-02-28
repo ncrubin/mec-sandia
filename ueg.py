@@ -3,6 +3,20 @@ import math
 from dataclasses import dataclass
 import numpy as np
 
+def calc_fermi_energy(rs):
+    return 0.5 * (9.0*np.pi/4.0)**(2.0/3.0) * rs**(-2.0)
+
+def calc_beta_from_theta(theta, rs):
+    ef = calc_fermi_energy(rs)
+    T = ef * theta
+    return 1.0 / T
+
+def calc_theta_from_beta(beta, rs):
+    ef = calc_fermi_energy(rs)
+    T = 1.0 / beta
+    theta = T / ef
+    return theta 
+
 
 @dataclass
 class UEG:
@@ -10,7 +24,7 @@ class UEG:
     num_elec: int
     box_length: float
     volume: float
-    eigenvalues: np.array 
+    eigenvalues: np.ndarray 
     cutoff: float
 
     @staticmethod
@@ -42,11 +56,8 @@ class UEG:
     @property
     def fermi_energy(self) -> float:
         """Unpolarized Fermi gas"""
-        return 0.5 * (9.0*np.pi/4.0)**(2.0/3.0) * self.rs**(-2.0)
+        return calc_fermi_energy(self.rs)
 
     def calc_beta_from_theta(self, theta) -> float:
         """Compute (inverse) temperature from target reduced temperature thetat = T/TF where TF is the Fermi temperature"""
-        ef = self.fermi_energy
-        T = ef * theta
-
-        return 1.0 / T
+        return calc_beta_from_theta(theta, self.rs) 
