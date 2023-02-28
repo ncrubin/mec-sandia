@@ -192,3 +192,9 @@ class DensityMatrix:
             for occ_str, weight in zip(self.occ_strings, self.weights)
         ]
         return float(np.mean(nav)), np.std(nav, ddof=1) / (self.num_samples**0.5)
+
+    def histogram_electron_counts(self) -> np.ndarray:
+        hist = np.zeros(self.num_spin_orbs)
+        for isample in range(self.num_samples):
+            hist[len(self.occ_strings[isample])] += 1
+        return hist
