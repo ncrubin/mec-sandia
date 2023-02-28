@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import itertools
 import numpy as np
 from typing import List, Tuple, Union
 
@@ -10,7 +11,7 @@ def fermi_factor(ek, mu, beta):
 
 
 def compute_electron_number(mu, eigs, beta):
-    return sum(fermi_factor(eigs, mu, beta))
+    return 2 * sum(fermi_factor(eigs, mu, beta))
 
 
 def cost_function(mu, eigs, beta, target_electron_number):
@@ -26,26 +27,64 @@ def find_chemical_potential(eigs, beta, target_num_elec, mu0=0.0):
 
 @dataclass
 class DensityMatrix:
-    num_basis: int
+    num_spin_orbs: int
     occ_strings: List[np.ndarray]
     weights: np.ndarray
 
     @staticmethod
     def build_grand_canonical(fermi_occupations: np.ndarray, num_samples: int):
         occ_string = []
-        orb_indices = np.arange(len(fermi_occupations), dtype=np.int32)
-        random_numbers = np.random.random(
-            size=num_samples * len(fermi_occupations)
-        ).reshape((num_samples, len(fermi_occupations)))
+        # Use spin orbitals abab ordering
+        num_spin_orbs = 2 * len(fermi_occupations)
+        orb_indices = np.arange(num_spin_orbs, dtype=np.int32)
+        random_numbers = np.random.random(size=num_samples * num_spin_orbs).reshape(
+            (num_samples, num_spin_orbs)
+        )
+        fermi_spin_orb = np.zeros(num_spin_orbs)
+        fermi_spin_orb[::2] = fermi_occupations
+        fermi_spin_orb[1::2] = fermi_occupations
         for isample in range(num_samples):
             pi = random_numbers[isample]
-            occ_str = orb_indices[np.where(fermi_occupations > pi)]
+            occ_str = orb_indices[np.where(fermi_spin_orb > pi)]
             occ_string.append(occ_str)
 
         return DensityMatrix(
-            num_basis=len(fermi_occupations),
+            num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
             weights=np.ones(num_samples),
+        )
+
+    @staticmethod
+    def build_grand_canonical_exact(eigenvalues: np.ndarray, mu: float, beta: float):
+        occ_string = []
+        weights = []
+        # Use spin orbitals abab ordering
+        num_spin_orbs = 2 * len(eigenvalues)
+        orb_indices = np.arange(num_spin_orbs, dtype=np.int32)
+        spin_eig = np.zeros(num_spin_orbs)
+        spin_eig[::2] = eigenvalues
+        spin_eig[1::2] = eigenvalues
+        Zgc = 0
+        for nelec in range(0, num_spin_orbs+1):
+            for occ_str in itertools.combinations(range(0, num_spin_orbs), nelec):
+                boltzmann = np.exp(-beta*(sum(spin_eig[list(occ_str)])-mu*nelec))
+                Zgc += boltzmann
+                weights.append(np.array(boltzmann))
+                occ_string.append(np.array(occ_str))
+
+        # dimh = 0
+        # import math
+        # nmo = len(fermi_occupations)
+        # for na in range(nmo+1):
+        #     for nb in range(nmo+1):
+        #         dimh += math.comb(nmo, na)*math.comb(nmo, nb)
+
+        #print(len(occ_string), dimh)
+
+        return DensityMatrix(
+            num_spin_orbs=num_spin_orbs,
+            occ_strings=occ_string,
+            weights=len(occ_string)*np.array(weights)/Zgc,
         )
 
     @property
@@ -54,9 +93,13 @@ class DensityMatrix:
 
     def compute_occupations(self) -> Tuple[float, float]:
         """Compute average electron number from statistical sample of density matrix"""
-        occupations = np.zeros((self.num_samples, self.num_basis))
+        occupations = np.zeros((self.num_samples, self.num_spin_orbs))
         for isample in range(self.num_samples):
-            occupations[isample, self.occ_strings[isample]] += 1.0 * self.weights[isample]
+            if len(self.occ_strings[isample]) == 0:
+                continue
+            occupations[isample, self.occ_strings[isample]] += (
+                1.0 * self.weights[isample]
+            )
         return (
             np.mean(occupations, axis=0),
             np.std(occupations, ddof=1, axis=0) / (self.num_samples**0.5),
@@ -68,12 +111,19 @@ class DensityMatrix:
         """Compute average electron number from statistical sample of density matrix"""
         one_body = np.zeros((self.num_samples,))
         for isample in range(self.num_samples):
-            one_body[isample] += sum(matrix_elements[self.occ_strings[isample]]*self.weights[isample])
+            if len(self.occ_strings[isample]) == 0:
+                continue
+            one_body[isample] += sum(
+                matrix_elements[self.occ_strings[isample] // 2] * self.weights[isample]
+            )
         return float(np.mean(one_body)), np.std(one_body, ddof=1) / (
             self.num_samples**0.5
         )
 
     def compute_electron_number(self) -> Tuple[float, float]:
         """Compute average electron number from statistical sample of density matrix"""
-        nav = [len(occ_str)*weight for occ_str, weight in zip(self.occ_strings, self.weights)]
+        nav = [
+            len(occ_str) * weight
+            for occ_str, weight in zip(self.occ_strings, self.weights)
+        ]
         return float(np.mean(nav)), np.std(nav, ddof=1) / (self.num_samples**0.5)
