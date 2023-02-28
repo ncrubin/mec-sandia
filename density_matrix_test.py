@@ -58,3 +58,17 @@ def test_exact_grand_canonical():
     )
     reference_energy = 2 * sum(system.eigenvalues * occs)
     assert np.isclose(kinetic_energy, reference_energy, atol=2*kinetic_energy_err)
+
+def test_sampling_canonical():
+    target_num_elec = 4
+    system = UEG.build(target_num_elec, 1.0, 0.5)
+    theta = 0.5
+    beta = system.calc_beta_from_theta(theta)
+    mu = find_chemical_potential(system.eigenvalues, beta, system.num_elec)
+    occs = fermi_factor(system.eigenvalues, mu, beta)
+    num_samples = 10000
+    np.random.seed(7)
+    dm = DensityMatrix.build_canonical(occs, num_samples, target_num_elec)
+    nav, nav_err = dm.compute_electron_number()
+    assert np.isclose(nav, target_num_elec)
+    dm_exact = DensityMatrix.build_canonical_exact(system.eigenvalues, num_samples, target_num_elec)

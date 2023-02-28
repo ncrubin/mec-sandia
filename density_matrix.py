@@ -55,6 +55,30 @@ class DensityMatrix:
         )
 
     @staticmethod
+    def build_canonical(fermi_occupations: np.ndarray, num_samples: int, target_num_elec: int):
+        occ_string = []
+        # Use spin orbitals abab ordering
+        num_spin_orbs = 2 * len(fermi_occupations)
+        orb_indices = np.arange(num_spin_orbs, dtype=np.int32)
+        random_numbers = np.random.random(size=num_samples * num_spin_orbs).reshape(
+            (num_samples, num_spin_orbs)
+        )
+        fermi_spin_orb = np.zeros(num_spin_orbs)
+        fermi_spin_orb[::2] = fermi_occupations
+        fermi_spin_orb[1::2] = fermi_occupations
+        for isample in range(num_samples):
+            pi = random_numbers[isample]
+            occ_str = orb_indices[np.where(fermi_spin_orb > pi)]
+            if len(occ_str) == target_num_elec:
+                occ_string.append(occ_str)
+
+        return DensityMatrix(
+            num_spin_orbs=num_spin_orbs,
+            occ_strings=occ_string,
+            weights=np.ones(num_samples),
+        )
+
+    @staticmethod
     def build_grand_canonical_exact(eigenvalues: np.ndarray, mu: float, beta: float):
         occ_string = []
         weights = []
@@ -72,19 +96,33 @@ class DensityMatrix:
                 weights.append(np.array(boltzmann))
                 occ_string.append(np.array(occ_str))
 
-        # dimh = 0
-        # import math
-        # nmo = len(fermi_occupations)
-        # for na in range(nmo+1):
-        #     for nb in range(nmo+1):
-        #         dimh += math.comb(nmo, na)*math.comb(nmo, nb)
-
-        #print(len(occ_string), dimh)
-
         return DensityMatrix(
             num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
             weights=len(occ_string)*np.array(weights)/Zgc,
+        )
+
+    @staticmethod
+    def build_canonical_exact(eigenvalues: np.ndarray, beta: float, num_elec: int):
+        occ_string = []
+        weights = []
+        # Use spin orbitals abab ordering
+        num_spin_orbs = 2 * len(eigenvalues)
+        orb_indices = np.arange(num_spin_orbs, dtype=np.int32)
+        spin_eig = np.zeros(num_spin_orbs)
+        spin_eig[::2] = eigenvalues
+        spin_eig[1::2] = eigenvalues
+        Z = 0
+        for occ_str in itertools.combinations(range(0, num_spin_orbs), num_elec):
+            boltzmann = np.exp(-beta*(sum(spin_eig[list(occ_str)])))
+            Z += boltzmann
+            weights.append(np.array(boltzmann))
+            occ_string.append(np.array(occ_str))
+
+        return DensityMatrix(
+            num_spin_orbs=num_spin_orbs,
+            occ_strings=occ_string,
+            weights=len(occ_string)*np.array(weights)/Z,
         )
 
     @property
