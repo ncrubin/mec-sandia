@@ -55,7 +55,7 @@ def test_exact_grand_canonical():
     occs = fermi_factor(system.eigenvalues, mu, beta)
     dm = DensityMatrix.build_grand_canonical_exact(system.eigenvalues, mu, beta)
     nav, nav_err = dm.compute_electron_number()
-    assert np.isclose(nav, target_num_elec, atol=nav_err)
+    assert np.isclose(nav, target_num_elec)
     fermi, fermi_err = dm.compute_occupations()
     assert np.allclose(fermi[::2], occs)
     assert np.allclose(fermi[1::2], occs)
@@ -63,7 +63,7 @@ def test_exact_grand_canonical():
         system.eigenvalues
     )
     reference_energy = 2 * sum(system.eigenvalues * occs)
-    assert np.isclose(kinetic_energy, reference_energy, atol=2 * kinetic_energy_err)
+    assert np.isclose(kinetic_energy, reference_energy)
 
 
 def test_sampling_canonical():
