@@ -744,7 +744,6 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
        nbr is an adjustment in the number of bits used for the nuclear positions
        L is the number of nuclei
     """
-    print("eps_mt", eps_mt.shape)
     # Total nuclear charge assumed to be equal to number of electrons. 
     lam_zeta = eta  
     
@@ -762,7 +761,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     # This uses pvec from planedata.nb, which is precomputed values for
     #  \[Lambda]_\[Nu]. We start with a very large  guess for the number 
     # of bits to use for M (precision in \[Nu] \ preparation) then adjust it.*)
-    p = pv[np, 49]
+    p = pv[np-1, 49]
     
     # (*Now compute the lambda-values.*)
     # (*Here 64*(2^np-1))*p is \[Lambda]_\[Nu].*)
@@ -778,7 +777,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     nM = nMc + int(numpy.rint(numpy.log2(20 * lam_UV / eps)))
     
     #  (*Recompute p and \[Lambda]V.*)
-    p = pv[np, nM] 
+    p = pv[np-1, nM-1] 
     lam_V = tmp * (eta - 1)
     lam_U = tmp * 2 * lam_zeta
     
@@ -786,7 +785,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     pamp = numpy.sin(3*numpy.arcsin(numpy.sqrt(p)))  
     
     # (*We estimate the error due to the finite M using the precomputed table.*)
-    epsM = eps_mt[np, nM] * eta * (eta - 1) / (2 * numpy.pi * Omega**(1/3))
+    epsM = eps_mt[np-1, nM-1] * eta * (eta - 1) / (2 * numpy.pi * Omega**(1/3))
     
     # (*First we estimate the error due to the finite precision of the \
     # nuclear positions. The following formula is from the formula for the \
