@@ -12,6 +12,14 @@ def fermi_factor(
     mu: float,
     beta: float,
 ) -> Union[float, np.ndarray]:
+    """Fermi factor
+
+    :param ek: eigenvalue(s) to compute Fermi factor for.
+    :param mu: chemical potential.
+    :param beta: inverse temperature.
+
+    :returns f(ek): Fermi factor
+    """
     return 1.0 / (np.exp(beta * (ek - mu)) + 1)
 
 
@@ -20,6 +28,14 @@ def compute_electron_number(
     eigs: np.ndarray,
     beta: float,
 ) -> float:
+    """Compute average electron number
+
+    :param mu: chemical potential.
+    :param eigs: eigenvalues to compute Fermi factor for.
+    :param beta: inverse temperature.
+
+    :returns <N>_0: Average number of electrons. 
+    """
     return 2 * sum(fermi_factor(eigs, mu, beta))
 
 
@@ -29,6 +45,15 @@ def _chem_pot_cost_function(
     beta: float,
     target_electron_number: int,
 ) -> float:
+    """Cost function for finding chemical potential.
+
+    :param mu: chemical potential.
+    :param eigs: eigenvalues to compute Fermi factor for.
+    :param beta: inverse temperature.
+    :param target_electron_number: Target number of electrons.
+
+    :returns <N>_0-target_num_electrons: cost function value. 
+    """
     return compute_electron_number(mu, eigs, beta) - target_electron_number
 
 
@@ -38,7 +63,13 @@ def find_chemical_potential(
     target_num_elec: int,
     mu0=0.0,
 ) -> float:
-    r"""Find solution of :math:`<N> = \sum_i f(e_i, mu)`"""
+    r"""Find solution of :math:`<N> = \sum_i f(e_i, mu)`
+
+    :param eigs: eigenvalues to compute Fermi factor for.
+    :param beta: inverse temperature.
+    :param target_electron_number: Target number of electrons.
+    :param mu0: Initial guess for chemical potential. May be useful at low T (~HOMO).
+    """
     return scipy.optimize.fsolve(
         _chem_pot_cost_function, mu0, args=(eigs, beta, target_num_elec)
     )[0]
@@ -46,6 +77,17 @@ def find_chemical_potential(
 
 @dataclass
 class DensityMatrix:
+    """Small wrapper to represent a density matrix given a set of occupation strings, and weights.
+
+    Write rho = sum_i w_i s_i, where s_i = list of occupied spin orbitals, and w_i is an optional weight.
+
+    Note this is complete overkill as for sampling we never need to store the
+    configurations, but it's helpful for testing.
+
+    :param num_spin_orbs: Number of spin orbitals.
+    :param occ_strings: List of occupation number strings representing (diagonal) density matrix.
+    :param weights: Optional weights for density matrix.
+    """
     num_spin_orbs: int
     occ_strings: List[np.ndarray]
     weights: np.ndarray
@@ -54,6 +96,23 @@ class DensityMatrix:
     def build_grand_canonical(
         fermi_occupations: np.ndarray, num_samples: int
     ) -> DensityMatrix:
+        r"""Build statistitical representation of Grand Canonical density matrix for free fermions.
+
+        rho = 1/Z sum_N sum_{occ_N} e^{-beta\sum_{i_occ} (eps_i-mu)} |occ><occ|
+
+        Here we sample occupations with propability given by Boltzmann factors.
+        This can be achieved by occupying orbitals with probability given by the
+        fermi factors. This works because f_i gives the probability that orbital
+        i is occupied in this ensemble and there is no correlation between
+        orbitals so the probability of a given occupation is just the product of
+        the orbital probabilities.
+
+        Note in this case the occupation strings are drawn with probability
+        proportional to the Boltzmann factor so no weights are necessary.
+    
+        :param fermi_occupations: Fermi factors for every orbital.
+        :param num_samples: Number of samples to take when constructing density matrix.
+        """
         occ_string = []
         # Use spin orbitals abab ordering
         num_spin_orbs = 2 * len(fermi_occupations)
@@ -79,6 +138,20 @@ class DensityMatrix:
     def build_canonical(
         fermi_occupations: np.ndarray, num_samples: int, target_num_elec: int
     ) -> DensityMatrix:
+        r"""Build statistitical representation of Canonical density matrix for free fermions.
+
+        rho = 1/Z sum_{occ_N} e^{-beta\sum_{i_occ} (eps_i-mu)} |occ><occ|
+
+        Here we sample occupations with propability given by Boltzmann factors.
+        This can be achieved by occupying orbitals with probability given by the
+        fermi factors and discarding states with the incorrect number of electrons.
+
+        Note in this case the occupation strings are drawn with probability
+        proportional to the Boltzmann factor so no weights are necessary.
+    
+        :param fermi_occupations: Fermi factors for every orbital.
+        :param num_samples: Number of samples to take when constructing density matrix.
+        """
         occ_string = []
         # Use spin orbitals abab ordering
         num_spin_orbs = 2 * len(fermi_occupations)
@@ -105,6 +178,18 @@ class DensityMatrix:
     def build_grand_canonical_exact(
         eigenvalues: np.ndarray, mu: float, beta: float
     ) -> DensityMatrix:
+        r"""Build exact representation of Grand Canonical density matrix for free fermions.
+
+        rho = 1/Z sum_N sum_{occ_N} e^{-beta\sum_{i_occ} (eps_i-mu)} |occ><occ|
+
+        Here literally enumerate all 2^N occupation strings and set the weights to be the Boltzmann factors.
+
+        Naturally will only work for very small number of obitals. 
+
+        :param eigenvalues: Single-particle eigenvalues.
+        :param mu: Chemical potential.
+        :param beta: Inverse temperature.
+        """
         occ_string = []
         weights = []
         # Use spin orbitals abab ordering
@@ -121,6 +206,7 @@ class DensityMatrix:
                 weights.append(np.array(boltzmann))
                 occ_string.append(np.array(occ_str))
 
+        # Note for computing average properties we slightly abusing weights here to include factors of dim(H).
         return DensityMatrix(
             num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
@@ -131,6 +217,19 @@ class DensityMatrix:
     def build_canonical_exact(
         eigenvalues: np.ndarray, beta: float, num_elec: int
     ) -> DensityMatrix:
+        r"""Build exact representation of Canonical density matrix for free fermions.
+
+        rho = 1/Z sum_{occ_N} e^{-beta\sum_{i_occ} eps_i} |occ><occ|
+
+        Here literally enumerate all (N Choose eta) occupation strings and set
+        the weights to be the Boltzmann factors.
+
+        Naturally will only work for very small number of obitals. 
+
+        :param eigenvalues: Single-particle eigenvalues.
+        :param mu: Chemical potential.
+        :param beta: Inverse temperature.
+        """
         occ_string = []
         weights = []
         # Use spin orbitals abab ordering
@@ -146,6 +245,7 @@ class DensityMatrix:
             weights.append(np.array(boltzmann))
             occ_string.append(np.array(occ_str))
 
+        # Note for computing average properties we slightly abusing weights here to include factors of dim(H).
         return DensityMatrix(
             num_spin_orbs=num_spin_orbs,
             occ_strings=occ_string,
@@ -173,7 +273,10 @@ class DensityMatrix:
     def contract_diagonal_one_body(
         self, matrix_elements: np.ndarray
     ) -> Tuple[float, float]:
-        """Compute average electron number from statistical sample of density matrix"""
+        """Contact diagonal one-body operator with density matrix
+
+        :param matrix_elements: 1D array of spatial orbital matrix elements of diagonal operator. 
+        """
         one_body = np.zeros((self.num_samples,))
         for isample in range(self.num_samples):
             if len(self.occ_strings[isample]) == 0:
@@ -186,7 +289,7 @@ class DensityMatrix:
         )
 
     def compute_electron_number(self) -> Tuple[float, float]:
-        """Compute average electron number from statistical sample of density matrix"""
+        """Compute average electron number from density matrix"""
         nav = [
             len(occ_str) * weight
             for occ_str, weight in zip(self.occ_strings, self.weights)
@@ -194,6 +297,7 @@ class DensityMatrix:
         return float(np.mean(nav)), np.std(nav, ddof=1) / (self.num_samples**0.5)
 
     def histogram_electron_counts(self) -> np.ndarray:
+        """Build histrogram of electron numbers."""
         hist = np.zeros(self.num_spin_orbs)
         for isample in range(self.num_samples):
             hist[len(self.occ_strings[isample])] += 1

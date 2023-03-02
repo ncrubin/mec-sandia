@@ -1,3 +1,4 @@
+from __future__ import annotations
 import itertools
 import math
 from dataclasses import dataclass
@@ -6,18 +7,33 @@ import numpy as np
 
 
 def calc_fermi_energy(rs: float) -> float:
+    """Fermi energy of unpolarised free Fermi gas.
+    
+    :param rs: Wigner-Seitz radius.
+    :returns EF: Fermi energy.
+    """
     return 0.5 * (9.0 * np.pi / 4.0) ** (2.0 / 3.0) * rs ** (-2.0)
 
 
 def calc_beta_from_theta(theta: float, rs: float) -> float:
-    """Compute beta = 1 / T from theta = T / TF. TF = Fermi temperature"""
+    """Compute beta = 1 / T from theta = T / TF. TF = Fermi temperature
+
+    :param theta: T/TF.
+    :param rs: Wigner-Seitz radius.
+    :returns beta: Inverse temperature in au.
+    """
     ef = calc_fermi_energy(rs)
     T = ef * theta
     return 1.0 / T
 
 
 def calc_theta_from_beta(beta: float, rs: float) -> float:
-    """Compute theta = T / TF from beta = 1 / T, where TF = Fermi temperature"""
+    """Compute theta = T / TF from beta = 1 / T, where TF = Fermi temperature
+
+    :param theta: T/TF.
+    :param rs: Wigner-Seitz radius.
+    :returns beta: Inverse temperature in au.
+    """
     ef = calc_fermi_energy(rs)
     T = 1.0 / beta
     theta = T / ef
@@ -26,6 +42,15 @@ def calc_theta_from_beta(beta: float, rs: float) -> float:
 
 @dataclass
 class UEG:
+    """Basic finite-sized 3D uniform electron gas (free fermions) system class
+
+    :param rs: Wigner-Seitz radius
+    :param num_elec: Number of electrons
+    :param box_length: Box length L.
+    :param volum: Box Volume.
+    :param eigenvalues: Single-particle eigenvalues (1/2 k^2).
+    :param cutoff: Dimensionless kinetic energy cutoff in units of (2 pi / L)^2.
+    """
     rs: float
     num_elec: int
     box_length: float
@@ -34,7 +59,7 @@ class UEG:
     cutoff: float
 
     @staticmethod
-    def build(num_elec: int, rs: float, cutoff: float):
+    def build(num_elec: int, rs: float, cutoff: float) -> UEG:
         """Build 3D UEG helper class."""
         volume = (rs**3.0) * (4.0 * np.pi * num_elec / 3)
         box_length = volume ** (1.0 / 3.0)

@@ -4,3 +4,4 @@ scipy
 pytest
 sympy
 matplotlib
+black
