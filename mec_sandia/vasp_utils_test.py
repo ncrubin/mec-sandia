@@ -114,3 +114,7 @@ def test_read_kohn_sham_data():
     assert np.isclose(2 * sum(occs), num_elec)
     eigs, occs = read_kohn_sham_data(f"{_test_path}/../vasp_data/C_1eV_EIGENVAL")
     assert np.isclose(2 * sum(occs), num_elec)
+    cell_vasp = local_read_vasp(f"{_test_path}/../vasp_data/D_POSCAR")
+    num_elec = len(np.where(cell_vasp.get_atomic_numbers() == 1)[0])
+    eigs, occs = read_kohn_sham_data(f"{_test_path}/../vasp_data/D_1eV_EIGENVAL")
+    assert np.isclose(2 * sum(occs), num_elec)
