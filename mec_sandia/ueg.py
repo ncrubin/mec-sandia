@@ -56,6 +56,7 @@ class UEG:
     box_length: float
     volume: float
     eigenvalues: np.ndarray
+    gvecs: np.ndarray
     cutoff: float
 
     @staticmethod
@@ -65,15 +66,19 @@ class UEG:
         box_length = volume ** (1.0 / 3.0)
         nmax = int(math.ceil(np.sqrt((2 * cutoff))))
         spval = []
+        gvecs = []
         factor = 2 * np.pi / box_length
         for ni, nj, nk in itertools.product(range(-nmax, nmax + 1), repeat=3):
             spe = 0.5 * (ni**2 + nj**2 + nk**2)
             if spe <= cutoff:
                 # Reintroduce 2 \pi / L factor.
                 spval.append(spe * factor**2.0)
+                gvecs.append([ni, nj, nk])
 
         # Sort the arrays in terms of increasing energy.
-        eigs = np.sort(np.array(spval))
+        ix = np.argsort(spval)
+        eigs = np.array(spval)[ix]
+        gvecs_sorted = np.array(gvecs)[ix]
 
         return UEG(
             rs=rs,
@@ -81,6 +86,7 @@ class UEG:
             box_length=box_length,
             volume=volume,
             eigenvalues=eigs,
+            gvecs=gvecs_sorted,
             cutoff=cutoff,
         )
 

@@ -48,8 +48,7 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
         assert coord_type == "direct"
         tot_atoms = sum(num_atoms)
         coords = []
-        D_indx = np.where(atom_names)
-        for atom in range(tot_atoms):
+        for _ in range(tot_atoms):
             coords.append([float(x) for x in fid.readline().split()])
         symbols = []
         for sym, num_at in zip(atom_names, num_atoms):
