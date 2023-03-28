@@ -860,9 +860,9 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     cr = n_eta_zeta + 2 * n_eta + 6*np + nM + 16
 
     # (*First the cost without the amplitude amplification.*)
-    cq = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + cr) * m1
-    # (*Next the cost with the amplitude amplification.*)
-    cqaa = (c1 + c2 + c3 + c4 + c5 + 3*c6 + c7 + c8 + c9 + cr)*m2
+    cq = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + cr) 
+    # (*Next the cost with the amplitude amplification.*) 
+    cqaa = (c1 + c2 + c3 + c4 + c5 + 3*c6 + c7 + c8 + c9 + cr) 
 
     # (*Qubits for qubitisation.*)
     q1 = 3 * eta * np # (*Qubits storing the momenta.*)
@@ -900,5 +900,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     q14 = 6
     # (*Arithmetic for phasing for nuclear positions.*)
     q15 = 2*(nR - 2) 
-    qt = q1 + q2 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14
-    return numpy.min([cq, cqaa]), qt
+    qt = q1 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14
+
+    final_cost_toffoli = cq if cq * m1 < cqaa * m2 else cqaa
+    return final_cost_toffoli, qt
