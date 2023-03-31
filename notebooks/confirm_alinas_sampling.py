@@ -49,7 +49,7 @@ def main():
     num_trials = 100
 
     # for idx, sigmasquared in enumerate([5, 10, 15, 20]):
-    for idx, sigmasquared in enumerate([10, 100, 1000, 10_000]):
+    for idx, sigmasquared in enumerate([5, 100, 1000, 10_000]):
         average_slopes = []
         average_slopes_error = []
         n_vals = []
@@ -78,7 +78,7 @@ def main():
 
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$N_{t}$", fontsize=14)
-    ax.set_ylabel(r"Stopping Power Error [a.u.]", fontsize=14)
+    ax.set_ylabel(r"Stopping Power Error [Ha/Bohr]", fontsize=14)
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.legend(loc='upper right', fontsize=10, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
