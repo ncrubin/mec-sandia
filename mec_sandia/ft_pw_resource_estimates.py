@@ -900,7 +900,8 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     q14 = 6
     # (*Arithmetic for phasing for nuclear positions.*)
     q15 = 2*(nR - 2) 
-    qt = q1 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14
+    qt = q1 + q3 + q4 + q5 + q6 + q7 + q8 + q10 + q11 + q12 + q13 + q14 # + # q9
 
-    final_cost_toffoli = cq if cq * m1 < cqaa * m2 else cqaa
-    return final_cost_toffoli, qt
+    final_cost_toffoli, final_lambda, qpe_lam = (cq, lam_1, m1) if cq * m1 < cqaa * m2 else (cqaa, lam_2, m2)
+
+    return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
