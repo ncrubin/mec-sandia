@@ -3,6 +3,8 @@ from typing import Tuple
 import ase
 import numpy as np
 
+from itertools import chain
+
 
 def compute_wigner_seitz_radius(volume: float, num_valence_elec: int) -> float:
     """Extract wigner seitz radius from system parameters.
@@ -50,9 +52,13 @@ def read_vasp(poscar_file: str) -> ase.Atoms:
         coords = []
         for _ in range(tot_atoms):
             coords.append([float(x) for x in fid.readline().split()])
-        symbols = []
-        for sym, num_at in zip(atom_names, num_atoms):
-            symbols += list(sym * num_at)
+        # symbols = []
+        # print(list(zip(atom_names, num_atoms)))
+        # for sym, num_at in zip(atom_names, num_atoms):
+        #     print(sym, num_at)
+        #     symbols += list(sym * num_at)
+        # print(symbols)
+        symbols = list(chain.from_iterable([[sym] * num_at for sym, num_at in zip(atom_names, num_atoms)]))
         symbols_no_D = ["H" if name == "D" else name for name in symbols]
         D_indx = [indx for indx, name in enumerate(symbols) if name == "D"]
         atoms = ase.Atoms(symbols=symbols_no_D, cell=basis_vectors, pbc=True)

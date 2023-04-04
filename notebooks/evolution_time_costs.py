@@ -15,7 +15,7 @@ import matplotlib as mpl
 mpl.rcParams['axes.formatter.useoffset'] = False
 def hydrogen_evolution_time_costs():
     # Deuterium
-    ase_cell = read_vasp(os.path.join(VASP_DATA, "D_POSCAR"))
+    ase_cell = read_vasp(os.path.join(VASP_DATA, "H_2eV_POSCAR"))
     # Next we can get some system paramters
     volume_ang = ase_cell.get_volume()
     print("Volume = {} A^3".format(volume_ang))
@@ -88,12 +88,12 @@ def hydrogen_evolution_time_costs():
 
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$\epsilon$", fontsize=14)
-    ax.set_ylabel(r"Toffolis [$10^{10}$]", fontsize=14)
+    ax.set_ylabel(r"Toffolis [$10^{8}$]", fontsize=14)
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.legend(loc='upper right', fontsize=14, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
-    plt.savefig("deuterium_epsilon_vs_evolution_time.png", format="PNG", dpi=300)
-    plt.savefig("deuterium_epsilon_vs_evolution_time.pdf", format="PDF", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time.png", format="PNG", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time.pdf", format="PDF", dpi=300)
 
 
 
