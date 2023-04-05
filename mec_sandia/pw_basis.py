@@ -127,9 +127,9 @@ class SquareBoxPlanewaves:
         else:
             return self.kp_basis
     
-    def get_ke_diagonal_values(self,):
+    def get_ke_diagonal_values(self,mass=1):
         if self.ke_diagonal is None:
-            self.ke_diagonal = 0.5 * np.sum(self.kp_basis**2, axis=-1)
+            self.ke_diagonal = np.sum(self.kp_basis**2, axis=-1) / (2 * mass)
             return self.ke_diagonal
         else:
             return self.ke_diagonal
