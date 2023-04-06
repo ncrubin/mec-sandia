@@ -18,7 +18,7 @@ v_proj = 4.0  # atomic units just taken from carbon
 mass_proj = 1836
 ke = 0.5 * mass_proj * v_proj**2.0  # classical ke
 kproj = np.array([mass_proj * v_proj, 0, 0])
-kproj[0] = 0.0
+#kproj[0] = 0.0
 sigma_k = 4.0
 
 
@@ -66,7 +66,7 @@ for sigma_k, res_dict in sigmas.items():
         gaussian = np.exp(-ksq / (2 * sigma_k**2.0))
         sum_k = np.sum(kpsq * gaussian)
         prefactor = 1.0 / np.sum(gaussian)
-        ke_sum = sum_k * prefactor / (2 * mass_proj)
+        ke_sum = sum_k * prefactor / (2 * mass_proj) - ke
         ke_int = sigma_k**2.0 / (2 * mass_proj)
         res_dict.deltas.append(ke_sum - ke_int)
         res_dict.norm.append(prefactor)
