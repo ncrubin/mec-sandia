@@ -141,6 +141,7 @@ class SquareBoxPlanewaves:
             return self.G0_basis
         else:
             return self.G0_basis
+        
        
 
 if __name__ == "__main__":
