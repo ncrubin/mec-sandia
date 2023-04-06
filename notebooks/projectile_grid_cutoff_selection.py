@@ -63,7 +63,7 @@ def main():
     ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
     plt.savefig("gaussian.png", format='PNG', dpi=300)
-    plt.show()
+    # plt.show()
     # exit()
 
 
@@ -78,10 +78,10 @@ def main():
     sigma_squared = [4, 16, 36, 100]
     for idx, ss in enumerate(sigma_squared):
         k2_expectation_diff = []
-        for nx in nx_grid:
+        for ix, nx in enumerate(nx_grid):
             # note the grid is indexed by |p>
             kgrid = np.arange(-nx/2, nx/2)
-            # true_norm_constant = 1 / (np.sqrt(2 * np.pi) * np.sqrt(ss))
+            true_norm_constant = 1 / (np.sqrt(2 * np.pi) * np.sqrt(ss))
             ygrid = np.exp(-0.5 * ((2 * np.pi)**2 / L**2) * kgrid**2 / ss)
             norm_constant = np.sum(ygrid)
             ygrid /= norm_constant
@@ -93,11 +93,19 @@ def main():
             # grid spacing is 1.
             discrete_rho_xsquared = np.sum(ygrid * (kgrid - p_proj)**2) * (2 * np.pi)**2 / L**2 / (2 * m)  # extra (2pi)^2 / L^2 is for converting from int to wavenumber
             exact_rho_xsquared = (ss + p_proj**2 * (2 * np.pi)**2 / L**2) / (2 * m)
-            print(discrete_rho_xsquared, exact_rho_xsquared)
+            #print(discrete_rho_xsquared, exact_rho_xsquared)
             k2_expectation_diff.append(np.abs(np.sqrt(discrete_rho_xsquared) - np.sqrt(exact_rho_xsquared))) # times 1K for milliHartree
-        print(k2_expectation_diff)
+            print("ecut = ", ke_cutoffs_eV[ix])
+            print("nmax = ", nx)
+            print("min k = ", min(*kgrid))
+            print("ke exact = ", exact_rho_xsquared)
+            print("ke sum= ", discrete_rho_xsquared)
+            print("norm exact = ", true_norm_constant)
+            print("norm sum= ", norm_constant)
+            print("sigma = ", ss**0.5)
+            print(k2_expectation_diff)
         ax.plot(ke_cutoffs_eV, k2_expectation_diff, color=colors[idx], label=r"$\sigma^{{2}} = {}$".format(ss), marker='o')
-        
+
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
     ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
@@ -106,9 +114,10 @@ def main():
     ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
     ax.set_xscale("log")
     ax.set_yscale("log")
+    plt.ylim([1e-11, 1e-2])
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
     plt.savefig("one_D_Gaussian_Variance_convergence.png", format='PNG', dpi=300)
-    plt.show()
+    #plt.show()
 
     print("PLOT 2")
     # 1-D Fionn's grid
@@ -144,17 +153,17 @@ def main():
         print(k2_expectation_diff)
         ax.plot(ke_cutoffs, k2_expectation_diff, color=colors[idx], label=r"$\sigma^{{2}} = {}$".format(ss), marker='o')
         
-    ax.tick_params(which='both', labelsize=14, direction='in')
-    ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
-    ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
-    ax.tick_params(which='both', labelsize=14, direction='in')
-    ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
-    ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
-    plt.savefig("one_D_Gaussian_Fionns_cutoffs_Variance_convergence.png", format='PNG', dpi=300)
-    plt.show()
+    # ax.tick_params(which='both', labelsize=14, direction='in')
+    # ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
+    # ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
+    # ax.tick_params(which='both', labelsize=14, direction='in')
+    # ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
+    # ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
+    # ax.set_xscale("log")
+    # ax.set_yscale("log")
+    # plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
+    # plt.savefig("one_D_Gaussian_Fionns_cutoffs_Variance_convergence.png", format='PNG', dpi=300)
+    #plt.show()
 
 
 if __name__ == "__main__":
