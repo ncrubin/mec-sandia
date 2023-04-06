@@ -51,12 +51,9 @@ def main():
     ygrid = np.exp(-0.5 * kgrid**2 / ss)
     norm_constant = np.sum(ygrid)
     ygrid /= norm_constant
-
     # ke = (kgrid)**2 / (2 * m)
     ke = (kgrid - kproj_x)**2 / (2 * m)
-
     print("<T_proj> = ", np.sum(ke * ygrid))
-
     ax.plot(kgrid, ygrid)
     ax2 = ax.twinx()
     ax2.plot(kgrid, ke, 'C1-')
@@ -75,16 +72,16 @@ def main():
     # set up grid number of points along a single dimension
     # 2 * pi * x / L.  
     nx_grid = 2**np.arange(2, 9)  # quantum algorithm takes things as a power of 2
-    ke_cutoffs_eV = (2 * np.pi)**2 * nx_grid**2 / L**2 * 27.11 # highest energy components in eV
+    ke_cutoffs_eV = (2 * np.pi)**2 * nx_grid**2 / L**2 * 27.11 / 2 # highest energy components in eV
     print(ke_cutoffs_eV)
     # variance for gaussian
-    sigma_squared = [1, 2, 4, 6]
+    sigma_squared = [4, 16, 36, 100]
     for idx, ss in enumerate(sigma_squared):
         k2_expectation_diff = []
         for nx in nx_grid:
             # note the grid is indexed by |p>
             kgrid = np.arange(-nx/2, nx/2)
-            true_norm_constant = 1 / (np.sqrt(2 * np.pi) * np.sqrt(ss))
+            # true_norm_constant = 1 / (np.sqrt(2 * np.pi) * np.sqrt(ss))
             ygrid = np.exp(-0.5 * ((2 * np.pi)**2 / L**2) * kgrid**2 / ss)
             norm_constant = np.sum(ygrid)
             ygrid /= norm_constant
@@ -95,11 +92,11 @@ def main():
 
             # grid spacing is 1.
             discrete_rho_xsquared = np.sum(ygrid * (kgrid - p_proj)**2) * (2 * np.pi)**2 / L**2 / (2 * m)  # extra (2pi)^2 / L^2 is for converting from int to wavenumber
-            exact_rho_xsquared = (ss + p_proj**2) * (2 * np.pi)**2 / L**2 / (2 * m)
+            exact_rho_xsquared = (ss + p_proj**2 * (2 * np.pi)**2 / L**2) / (2 * m)
             print(discrete_rho_xsquared, exact_rho_xsquared)
             k2_expectation_diff.append(np.abs(np.sqrt(discrete_rho_xsquared) - np.sqrt(exact_rho_xsquared))) # times 1K for milliHartree
         print(k2_expectation_diff)
-        ax.plot(ke_cutoffs_eV, k2_expectation_diff, color=colors[idx], label=r"$\sigma = {}$".format(ss), marker='o')
+        ax.plot(ke_cutoffs_eV, k2_expectation_diff, color=colors[idx], label=r"$\sigma^{{2}} = {}$".format(ss), marker='o')
         
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
@@ -127,7 +124,7 @@ def main():
     nx_grid = np.asarray(np.ceil(np.sqrt(2 * ke_cutoffs * L**2 / (2 * np.pi)**2)), dtype=int)
     print(ke_cutoffs_eV)
     # variance for gaussian
-    sigma_squared = [4, 6, 10]
+    sigma_squared = [16, 36, 100]
     for idx, ss in enumerate(sigma_squared):
         k2_expectation_diff = []
         for nx in nx_grid:
@@ -145,7 +142,7 @@ def main():
             print(discrete_rho_xsquared, exact_rho_xsquared)
             k2_expectation_diff.append(np.abs(np.sqrt(discrete_rho_xsquared) - np.sqrt(exact_rho_xsquared)))
         print(k2_expectation_diff)
-        ax.plot(ke_cutoffs, k2_expectation_diff, color=colors[idx], label=r"$\sigma = {}$".format(ss), marker='o')
+        ax.plot(ke_cutoffs, k2_expectation_diff, color=colors[idx], label=r"$\sigma^{{2}} = {}$".format(ss), marker='o')
         
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
