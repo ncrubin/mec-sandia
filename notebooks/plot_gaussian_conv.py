@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 
-nx_grid = 2**np.arange(2, 10)  # quantum algorithm takes things as a power of 2
+nx_grid = 2**np.arange(2, 9)  # quantum algorithm takes things as a power of 2
 ke_cutoffs_eV = 0.5 * (2 * np.pi)**2 * nx_grid**2 / L_bohr**2 * 27.11 # highest energy components in eV
 
 @dataclass
@@ -53,6 +53,7 @@ sigma_vals = [1, 4, 6, 10]
 sigmas = {s: Results() for s in sigma_vals} 
 #sigmas = {4: Results()}
 
+fig, ax = plt.subplots(nrows=1, ncols=1)
 for sigma_k, res_dict in sigmas.items():
     for ecut_ev in res_dict.cutoffs:
         ecut_ha = ecut_ev / Hartree
@@ -66,9 +67,9 @@ for sigma_k, res_dict in sigmas.items():
         gaussian = np.exp(-ksq / (2 * sigma_k**2.0))
         sum_k = np.sum(kpsq * gaussian)
         prefactor = 1.0 / np.sum(gaussian)
-        ke_sum = sum_k * prefactor / (2 * mass_proj) - ke
-        ke_int = sigma_k**2.0 / (2 * mass_proj)
-        res_dict.deltas.append(ke_sum - ke_int)
+        ke_sum = sum_k * prefactor / (2 * mass_proj)
+        ke_int = (sigma_k**2.0 + np.dot(kproj, kproj))/ (2 * mass_proj)
+        res_dict.deltas.append(np.sqrt(np.abs(ke_sum)) - np.sqrt(ke_int))
         res_dict.norm.append(prefactor)
         res_dict.norm_inf.append(_prefactor)
         res_dict.integral_val.append(ke_int)
@@ -87,12 +88,22 @@ for sigma_k, res_dict in sigmas.items():
         if ecut_ev == 1e5:
             plt.plot(xs, xs**2.0*np.exp(-xs**2.0/(2*sigma_k**2.0))*_prefactor, marker="o", label="continuous")
             plt.plot(xs, np.exp(-xs**2.0/(2*sigma_k**2.0))*_prefactor, marker="o", label="continuous")
+    print(res_dict.deltas)
     plt.legend()
     plt.savefig(f"gaussian_fig_{sigma_k}.pdf")
     plt.cla()
 
 
 plt.cla()
+ax.tick_params(which='both', labelsize=14, direction='in')
+ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
+ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
+ax.tick_params(which='both', labelsize=14, direction='in')
+ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
+ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
+ax.set_xscale("log")
+ax.set_yscale("log")
+plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
 for i, sigma_k in enumerate(list(sigmas.keys())[::-1]):
     plt.plot(
         sigmas[sigma_k].cutoffs,
@@ -101,32 +112,8 @@ for i, sigma_k in enumerate(list(sigmas.keys())[::-1]):
         label=rf"$\sigma_k$ = {sigma_k}",
         color=colors[i],
     )
-plt.tick_params(which="both", labelsize=14, direction="in")
-plt.legend(frameon=False, fontsize=14)
-plt.ylim([1e-11, 1e-1])
-plt.xlabel(r"$E_{\mathrm{cut}} (\mathrm{eV})$", fontsize=14)
-plt.yscale("log")
-plt.xscale("log")
+plt.ylim([1e-11, 1e-2])
+ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
 plt.ylabel("Kinetic Energy Error (Ha)", fontsize=14)
 plt.savefig("cutoff_convergence_1d.pdf", bbox_inches="tight", dpi=300)
-
-# for sigma_k, res_dict in sigmas.items():
-#     for ecut_ev in res_dict.cutoffs:
-#         ecut_ha = (ecut_ev/Hartree)
-#         nmax = get_ngmax(ecut_ha, L_bohr)
-#         kgrid = np.arange(-nmax//2, nmax//2)
-#         grid_spacing = 2*np.pi / L_bohr
-#         kxyz_grid = grid_spacing * cartesian_prod([kgrid, kgrid, kgrid])
-#         kpsq = np.sum((kxyz_grid + kproj[None,:])**2.0, axis=-1)
-#         ksq = np.sum(kxyz_grid**2.0, axis=-1)
-#         _prefactor = (np.sqrt(2*np.pi)/(sigma_k*L_bohr))**3.0
-#         gaussian = np.exp(-ksq/(2*sigma_k**2.0))
-#         sum_k = np.sum(kpsq*gaussian)
-#         prefactor = 1.0 / np.sum(gaussian)
-#         ke_sum = sum_k*prefactor/(2*mass_proj)# - ke
-#         ke_int = 3*sigma_k**2.0/(2*mass_proj)
-#         res_dict.deltas.append(ke_sum - ke_int)
-#         res_dict.norm.append(prefactor)
-#         res_dict.norm_inf.append(_prefactor)
-#         res_dict.integral_val.append(ke_int)
-#         print(sigma_k, ecut_ev, nmax, ke_sum-ke_int, ke + ke_int, prefactor - _prefactor)
+plt.savefig("cutoff_convergence_1d.png", bbox_inches="tight", dpi=300)
