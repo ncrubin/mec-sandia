@@ -2,7 +2,7 @@ from matplotlib.pyplot import box
 import numpy as np
 from mec_sandia.gaussians import (
     discrete_gaussian_wavepacket,
-    estimate_cutoff,
+    estimate_energy_cutoff,
     estimate_error_kinetic_energy,
     kinetic_energy,
     estimate_kinetic_energy,
@@ -77,12 +77,12 @@ _prec = 1e-8
 )
 def test_estimate_cutoff(input, expected):
     prec, sigma = input
-    kopt = estimate_cutoff(prec, sigma)
-    assert np.isclose(estimate_error_kinetic_energy(kopt, sigma), expected)
+    ecut = estimate_energy_cutoff(prec, sigma)
+    kcut = (2*ecut)**0.5
+    assert np.isclose(estimate_error_kinetic_energy(kcut, sigma), expected)
+    assert estimate_kinetic_energy(kcut, sigma) - 0.5*sigma**2.0 < expected
     box_length = 15
-    kopt = estimate_cutoff(prec, sigma)
-    ecut = 0.5 * kopt**2.0
+    ecut = estimate_energy_cutoff(prec, sigma)
     # 4 ecut for the sum apparently
     ke_sum = kinetic_energy(4*ecut, box_length, sigma, ndim=1)
     assert abs(ke_sum - 0.5*sigma**2.0) < expected 
-    assert estimate_kinetic_energy(kopt, sigma) - 0.5*sigma**2.0 < expected

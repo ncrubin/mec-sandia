@@ -14,6 +14,7 @@ def estimate_error_kinetic_energy(kcut: float, sigma: float) -> float:
     prefactor = 1.0 / (np.sqrt(2 * np.pi) * sigma)
     return 0.25 * prefactor * b * (t1 + t2)
 
+
 def estimate_kinetic_energy(kcut: float, sigma: float) -> float:
     a = kcut
     b = 2 * sigma**2.0
@@ -23,11 +24,23 @@ def estimate_kinetic_energy(kcut: float, sigma: float) -> float:
     return 0.25 * prefactor * b * (t2 + t1)
 
 
-def estimate_cutoff(target_precision, sigma):
-    objective = lambda x, sigma: (estimate_error_kinetic_energy(x, sigma) - target_precision)**2.0
-    brackets = scipy.optimize.bracket(objective, xa=10, xb=2*sigma, args=(sigma,))
-    x0 = scipy.optimize.bisect(lambda x, sigma: estimate_error_kinetic_energy(x, sigma) - target_precision, brackets[0], brackets[2], args=(sigma,))
-    return x0 
+def estimate_energy_cutoff(target_precision: float, sigma: float) -> float:
+    objective = (
+        lambda x, sigma: (estimate_error_kinetic_energy(x, sigma) - target_precision)
+        ** 2.0
+    )
+    brackets = scipy.optimize.bracket(objective, xa=10, xb=2 * sigma, args=(sigma,))
+    x0 = scipy.optimize.bisect(
+        lambda x, sigma: estimate_error_kinetic_energy(x, sigma) - target_precision,
+        brackets[0],
+        brackets[2],
+        args=(sigma,),
+    )
+    return 0.5*x0**2.0
+
+
+def estimate_energy_cutoff_sum(target_precision, sigma):
+    return 4 * estimate_energy_cutoff(target_precision, sigma)
 
 
 def get_ngmax(ecut, box_length):
@@ -45,7 +58,7 @@ def discrete_gaussian_wavepacket(
     nmax = get_ngmax(ecut_hartree, box_length)
     grid = (np.arange(-nmax / 2, nmax / 2, dtype=int),) * ndim
     grid_spacing = 2 * np.pi / box_length
-    kgrid = grid_spacing * cartesian_prod(grid) 
+    kgrid = grid_spacing * cartesian_prod(grid)
     gaussian = np.exp(-(np.sum(kgrid**2.0, axis=-1)) / (2 * sigma**2.0))
     normalization = np.sum(gaussian)
     return gaussian / normalization, kgrid, normalization
