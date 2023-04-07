@@ -1,4 +1,5 @@
 from matplotlib.backend_managers import ToolManagerMessageEvent
+from matplotlib.pyplot import box
 import numpy as np
 from typing import Tuple, Union
 import math
@@ -36,7 +37,7 @@ def estimate_energy_cutoff(target_precision: float, sigma: float) -> float:
         brackets[2],
         args=(sigma,),
     )
-    return 0.5*x0**2.0
+    return 0.5 * x0**2.0
 
 
 def estimate_energy_cutoff_sum(target_precision, sigma):
@@ -48,6 +49,25 @@ def get_ngmax(ecut, box_length):
     return ng_max
 
 
+def _build_gaussian(
+    ecut_hartree: float,
+    box_length: float,
+    sigma: float,
+    ndim: int = 1,
+    mu: Union[np.ndarray, None]=None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    if mu is None:
+        mu = np.zeros(
+            ndim,
+        )
+    nmax = get_ngmax(ecut_hartree, box_length)
+    grid = (np.arange(-nmax / 2, nmax / 2, dtype=int),) * ndim
+    grid_spacing = 2 * np.pi / box_length
+    kgrid = grid_spacing * cartesian_prod(grid)
+    gaussian = np.exp(-(np.sum((kgrid-mu[None,:])**2.0, axis=-1)) / (2 * sigma**2.0))
+    return gaussian, kgrid
+
+
 def discrete_gaussian_wavepacket(
     ecut_hartree: float,
     box_length: float,
@@ -55,11 +75,7 @@ def discrete_gaussian_wavepacket(
     ndim: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray, float]:
     assert ndim > 0
-    nmax = get_ngmax(ecut_hartree, box_length)
-    grid = (np.arange(-nmax / 2, nmax / 2, dtype=int),) * ndim
-    grid_spacing = 2 * np.pi / box_length
-    kgrid = grid_spacing * cartesian_prod(grid)
-    gaussian = np.exp(-(np.sum(kgrid**2.0, axis=-1)) / (2 * sigma**2.0))
+    gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
     normalization = np.sum(gaussian)
     return gaussian / normalization, kgrid, normalization
 
@@ -83,3 +99,54 @@ def kinetic_energy(
         0.5 * np.sum((kgrid + kproj[None, :]) ** 2.0, axis=-1) * gaussian
     )
     return kinetic_energy
+
+
+def estimate_kinetic_energy_sampling(
+    ecut_hartree: float,
+    box_length: float,
+    sigma: float,
+    ndim: int = 1,
+    num_samples: int = 1000,
+    kproj: Union[np.ndarray, None] = None,
+) -> Tuple[float, float]:
+    if kproj is None:
+        kproj = np.zeros(
+            ndim,
+        )
+    gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
+    norm = np.sum(gaussian)
+    indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=gaussian / norm)
+    k_select = kgrid[indx_k]
+    kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1)
+    return (
+        np.mean(kinetic_samples),
+        np.std(kinetic_samples, ddof=1) / num_samples**0.5,
+    )
+
+
+def estimate_kinetic_energy_importance_sampling(
+    ecut_hartree: float,
+    box_length: float,
+    sigma: float,
+    ndim: int = 1,
+    num_samples: int = 1000,
+    kproj: Union[np.ndarray, None] = None,
+) -> Tuple[float, float]:
+    if kproj is None:
+        kproj = np.zeros(
+            ndim,
+        )
+    gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
+    p_x = gaussian / sum(gaussian)
+    mu_opt = np.array((np.sqrt(2)**(1/2.0) * sigma,)*ndim)
+    q_x_plus, _ = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim, mu=mu_opt)
+    q_x_minus, _ = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim, mu=-mu_opt)
+    q_x = q_x_plus + q_x_minus
+    q_x = q_x / np.sum(q_x)
+    indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=q_x)
+    k_select = kgrid[indx_k]
+    kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1) * (p_x[indx_k]/q_x[indx_k])
+    return (
+        np.mean(kinetic_samples),
+        np.std(kinetic_samples, ddof=1) / num_samples**0.5,
+    )

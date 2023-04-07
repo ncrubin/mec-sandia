@@ -4,6 +4,8 @@ from mec_sandia.gaussians import (
     discrete_gaussian_wavepacket,
     estimate_energy_cutoff,
     estimate_error_kinetic_energy,
+    estimate_kinetic_energy_importance_sampling,
+    estimate_kinetic_energy_sampling,
     kinetic_energy,
     estimate_kinetic_energy,
 )
@@ -86,3 +88,17 @@ def test_estimate_cutoff(input, expected):
     # 4 ecut for the sum apparently
     ke_sum = kinetic_energy(4*ecut, box_length, sigma, ndim=1)
     assert abs(ke_sum - 0.5*sigma**2.0) < expected 
+
+
+def test_sampling():
+    sigma = 4
+    box_length = 15
+    ecut = 2000
+    ke, ke_err = estimate_kinetic_energy_sampling(ecut, box_length, sigma, ndim=1, num_samples=10_000)
+    assert np.isclose(ke, sigma**2.0 / 2, atol=5*ke_err)
+    ke, ke_err = estimate_kinetic_energy_importance_sampling(ecut, box_length, sigma, ndim=1, num_samples=10_000)
+    print(ke, ke_err)
+    assert np.isclose(ke, sigma**2.0 / 2, atol=5*ke_err)
+    assert np.isclose(ke, sigma**2.0 / 2, atol=5*ke_err)
+    ke, ke_err = estimate_kinetic_energy_sampling(ecut, box_length, sigma, ndim=3, num_samples=100_000)
+    assert np.isclose(ke, 3*sigma**2.0 / 2, atol=5*ke_err)
