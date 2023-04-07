@@ -128,6 +128,7 @@ def estimate_kinetic_energy_importance_sampling(
     ecut_hartree: float,
     box_length: float,
     sigma: float,
+    importance_function: np.ndarray,
     ndim: int = 1,
     num_samples: int = 1000,
     kproj: Union[np.ndarray, None] = None,
@@ -138,11 +139,7 @@ def estimate_kinetic_energy_importance_sampling(
         )
     gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
     p_x = gaussian / sum(gaussian)
-    mu_opt = np.array((np.sqrt(2)**(1/2.0) * sigma,)*ndim)
-    q_x_plus, _ = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim, mu=mu_opt)
-    q_x_minus, _ = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim, mu=-mu_opt)
-    q_x = q_x_plus + q_x_minus
-    q_x = q_x / np.sum(q_x)
+    q_x = importance_function
     indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=q_x)
     k_select = kgrid[indx_k]
     kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1) * (p_x[indx_k]/q_x[indx_k])
