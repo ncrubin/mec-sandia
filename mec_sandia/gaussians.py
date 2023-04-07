@@ -11,7 +11,16 @@ def estimate_error_kinetic_energy(kcut: float, sigma: float) -> float:
     b = 2 * sigma**2.0
     t1 = 2 * a * np.exp(-(a**2.0) / b)
     t2 = np.sqrt(np.pi * b) * scipy.special.erfc(a / (b**0.5))
-    return 0.25 * b * (t1 + t2)
+    prefactor = 1.0 / (np.sqrt(2 * np.pi) * sigma)
+    return 0.25 * prefactor * b * (t1 + t2)
+
+def estimate_kinetic_energy(kcut: float, sigma: float) -> float:
+    a = kcut
+    b = 2 * sigma**2.0
+    t1 = 2 * a * np.exp(-(a**2.0) / b)
+    t2 = np.sqrt(np.pi * b) * scipy.special.erf(a / (b**0.5))
+    prefactor = 1.0 / (np.sqrt(2 * np.pi) * sigma)
+    return 0.25 * prefactor * b * (t2 + t1)
 
 
 def estimate_cutoff(target_precision, sigma):
