@@ -1,8 +1,9 @@
+from matplotlib.backend_managers import ToolManagerMessageEvent
 import numpy as np
 from typing import Tuple, Union
 import math
-import itertools
 from pyscf.lib.numpy_helper import cartesian_prod
+import scipy.optimize
 
 
 def estimate_error_kinetic_energy(kcut: float, sigma: float) -> float:
@@ -13,8 +14,11 @@ def estimate_error_kinetic_energy(kcut: float, sigma: float) -> float:
     return 0.25 * b * (t1 + t2)
 
 
-def estimate_cutoff():
-    pass
+def estimate_cutoff(target_precision, sigma):
+    objective = lambda x, sigma: (estimate_error_kinetic_energy(x, sigma) - target_precision)**2.0
+    brackets = scipy.optimize.bracket(objective, xa=10, xb=2*sigma, args=(sigma,))
+    x0 = scipy.optimize.bisect(lambda x, sigma: estimate_error_kinetic_energy(x, sigma) - target_precision, brackets[0], brackets[2], args=(sigma,))
+    return x0 
 
 
 def get_ngmax(ecut, box_length):
@@ -45,6 +49,7 @@ def kinetic_energy(
     ndim: int = 1,
     kproj: Union[np.ndarray, None] = None,
 ) -> float:
+    """kproj needs to be in units of a0^{-1}"""
     if kproj is None:
         kproj = np.zeros(
             ndim,

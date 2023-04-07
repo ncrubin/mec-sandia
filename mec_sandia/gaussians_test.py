@@ -1,6 +1,7 @@
 from matplotlib.pyplot import box
 import numpy as np
-from mec_sandia.gaussians import discrete_gaussian_wavepacket, kinetic_energy
+from mec_sandia.gaussians import discrete_gaussian_wavepacket, estimate_cutoff, estimate_error_kinetic_energy, kinetic_energy
+import pytest
 
 
 def test_discrete_gaussian_wavepacket():
@@ -62,3 +63,9 @@ def test_kinetic_energy():
     kproj = 2 * np.pi / box_length * np.random.random(3)
     ke = kinetic_energy(ecut, box_length, sigma, ndim=3, kproj=kproj)
     assert np.allclose(ke, (3*sigma**2.0 + np.dot(kproj, kproj)) / 2)
+
+@pytest.mark.parametrize("input,expected", [((1e-7, 10), 1e-7), ((1e-7, 4), 1e-7), ((1e-7, 100), 1e-7)])
+def test_estimate_cutoff(input, expected):
+    prec, sigma = input
+    kopt = estimate_cutoff(prec, sigma)
+    assert np.isclose(estimate_error_kinetic_energy(kopt, sigma), expected)
