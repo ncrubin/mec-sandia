@@ -2,6 +2,7 @@ from matplotlib.pyplot import box
 import numpy as np
 from mec_sandia.gaussians import (
     _build_gaussian,
+    compute_stopping_power,
     discrete_gaussian_wavepacket,
     estimate_energy_cutoff,
     estimate_error_kinetic_energy,
@@ -75,36 +76,69 @@ def test_kinetic_energy():
 
 
 _prec = 1e-8
+
+
 @pytest.mark.parametrize(
     "input,expected", [((_prec, 10), _prec), ((_prec, 4), _prec), ((_prec, 100), _prec)]
 )
 def test_estimate_cutoff(input, expected):
     prec, sigma = input
     ecut = estimate_energy_cutoff(prec, sigma)
-    kcut = (2*ecut)**0.5
+    kcut = (2 * ecut) ** 0.5
     assert np.isclose(estimate_error_kinetic_energy(kcut, sigma), expected)
-    assert estimate_kinetic_energy(kcut, sigma) - 0.5*sigma**2.0 < expected
+    assert estimate_kinetic_energy(kcut, sigma) - 0.5 * sigma**2.0 < expected
     box_length = 15
     ecut = estimate_energy_cutoff(prec, sigma)
     # 4 ecut for the sum apparently
-    ke_sum = kinetic_energy(4*ecut, box_length, sigma, ndim=1)
-    assert abs(ke_sum - 0.5*sigma**2.0) < expected 
+    ke_sum = kinetic_energy(4 * ecut, box_length, sigma, ndim=1)
+    assert abs(ke_sum - 0.5 * sigma**2.0) < expected
 
 
 def test_sampling():
     sigma = 4
     box_length = 15
     ecut = 2000
-    ke, ke_err = estimate_kinetic_energy_sampling(ecut, box_length, sigma, ndim=1, num_samples=10_000)
-    assert np.isclose(ke, sigma**2.0 / 2, atol=5*ke_err)
-    ke, ke_err = estimate_kinetic_energy_sampling(ecut, box_length, sigma, ndim=3, num_samples=100_000)
-    assert np.isclose(ke, 3*sigma**2.0 / 2, atol=5*ke_err)
+    ke, ke_err = estimate_kinetic_energy_sampling(
+        ecut, box_length, sigma, ndim=1, num_samples=10_000
+    )
+    assert np.isclose(ke, sigma**2.0 / 2, atol=5 * ke_err)
+    ke, ke_err = estimate_kinetic_energy_sampling(
+        ecut, box_length, sigma, ndim=3, num_samples=100_000
+    )
+    assert np.isclose(ke, 3 * sigma**2.0 / 2, atol=5 * ke_err)
     # Playing with importance sampling
     ndim = 1
-    mu_opt = np.array((np.sqrt(2)**(1/2.0) * sigma,)*ndim)
+    mu_opt = np.array((np.sqrt(2) ** (1 / 2.0) * sigma,) * ndim)
     q_x_plus, _ = _build_gaussian(ecut, box_length, sigma, ndim=1, mu=mu_opt)
     q_x_minus, _ = _build_gaussian(ecut, box_length, sigma, ndim=1, mu=-mu_opt)
     q_x = q_x_plus + q_x_minus
     q_x = q_x / np.sum(q_x)
-    ke, ke_err = estimate_kinetic_energy_importance_sampling(ecut, box_length, sigma, q_x, ndim=1, num_samples=10_000)
-    assert np.isclose(ke, sigma**2.0 / 2, atol=5*ke_err)
+    ke, ke_err = estimate_kinetic_energy_importance_sampling(
+        ecut, box_length, sigma, q_x, ndim=1, num_samples=10_000
+    )
+    assert np.isclose(ke, sigma**2.0 / 2, atol=5 * ke_err)
+
+
+def test_stopping_power():
+    v_proj = 10.0  # atomic units just taken from carbon
+    mass_proj = 1836
+    ke = 0.5 * mass_proj * v_proj**2.0  # classical ke
+    kproj = np.array([mass_proj * v_proj, 0, 0])
+    time_vals = np.linspace(0, 40, 20)
+    box_length = 15
+    ecut = 2000
+    sigma_k = 10.0
+    stopping_deriv = 0.17957
+
+    stopping, err = compute_stopping_power(
+        ecut,
+        box_length,
+        sigma_k,
+        time_vals,
+        stopping_deriv,
+        mass_proj,
+        ndim=3,
+        num_samples=1_000,
+        kproj=kproj,
+    )
+    print(stopping, err)
