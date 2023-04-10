@@ -1,5 +1,6 @@
 from ase.units import Bohr, Hartree
 from dataclasses import dataclass
+import json
 import numpy as np
 import scipy.optimize
 
@@ -12,6 +13,17 @@ def compute_sigma_time(time, sigma, stopping_deriv, mass_proj):
 
 def _fit_linear(x, a, b):
     return a * x + b
+
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 
 @dataclass
@@ -26,10 +38,24 @@ class StoppingPowerData:
     time_vals: np.ndarray
     distance: np.ndarray
     sigma_vals: np.ndarray
+    stopping_expected: float
 
     def linear_fit(self, xs):
         return _fit_linear(xs, self.stopping, self.intercept)
 
+    def to_file(self, filename):
+        json_string = json.dumps(self.__dict__, cls=NumpyEncoder, indent=4)
+        with open(filename, "w") as fid:
+            fid.write(json_string)
+
+    @staticmethod
+    def from_file(filename): 
+        with open(filename, "r") as fid:
+            stopping_data_dict = json.load(fid)
+        for k, v in stopping_data_dict.items():
+            if isinstance(v, list):
+                stopping_data_dict[k] = np.array(v)
+        return StoppingPowerData(**stopping_data_dict)
 
 @dataclass
 class DFTStoppingPowerData:
@@ -56,12 +82,13 @@ def parse_stopping_data(
         2.0 / mass_proj * ke_time
     )  # 1/2 mv^2 = KE, so sqrt(2/m*KE)=v
     kproj_time = mass_proj * velocity_time
+    # TODO: Replace this with Alina's sampling!
     sub_sample = np.random.choice(np.arange(len(time_au)), num_points)
     time_vals = time_au[sub_sample]
     ix = np.argsort(time_vals)
     time_vals = time_vals[ix]
     kproj_x_vals = kproj_time[sub_sample][ix]
-    data = DFTStoppingData(
+    data = DFTStoppingPowerData(
         time_au,
         position_au,
         work_au,
@@ -101,6 +128,9 @@ def compute_stopping_power(
     )
     slope, incpt = popt
     slope_err = np.sqrt(pcov[0, 0])
+    yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (2 * mass_proj)
+    xvals = distance
+    expected_val = compute_stopping_exact(xvals, yvals)
     data = StoppingPowerData(
         stopping=slope,
         stopping_err=slope_err,
@@ -112,5 +142,14 @@ def compute_stopping_power(
         time_vals=time_vals,
         distance=distance,
         sigma_vals=sigma_tvals,
+        stopping_expected=expected_val
     )
     return data
+
+def compute_stopping_exact(xvals, yvals):
+    popt, pcov = scipy.optimize.curve_fit(
+        _fit_linear,
+        xvals,
+        yvals,
+    )
+    return popt[0]
