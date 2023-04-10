@@ -105,7 +105,7 @@ def parse_stopping_data(
 def compute_stopping_power(
     ecut_hartree: float,
     box_length: float,
-    sigma0: int,
+    sigma0: float,
     time_vals: np.ndarray,
     kproj_vals: np.ndarray,
     stopping_deriv: float,

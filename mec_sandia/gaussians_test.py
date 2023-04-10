@@ -1,8 +1,6 @@
-from matplotlib.pyplot import box
 import numpy as np
 from mec_sandia.gaussians import (
     _build_gaussian,
-    compute_stopping_power,
     discrete_gaussian_wavepacket,
     estimate_energy_cutoff,
     estimate_error_kinetic_energy,
@@ -117,28 +115,3 @@ def test_sampling():
         ecut, box_length, sigma, q_x, ndim=1, num_samples=10_000
     )
     assert np.isclose(ke, sigma**2.0 / 2, atol=5 * ke_err)
-
-
-def test_stopping_power():
-    v_proj = 10.0  # atomic units just taken from carbon
-    mass_proj = 1836
-    ke = 0.5 * mass_proj * v_proj**2.0  # classical ke
-    kproj = np.array([mass_proj * v_proj, 0, 0])
-    time_vals = np.linspace(0, 40, 20)
-    box_length = 15
-    ecut = 2000
-    sigma_k = 10.0
-    stopping_deriv = 0.17957
-
-    stopping, err = compute_stopping_power(
-        ecut,
-        box_length,
-        sigma_k,
-        time_vals,
-        stopping_deriv,
-        mass_proj,
-        ndim=3,
-        num_samples=1_000,
-        kproj=kproj,
-    )
-    print(stopping, err)

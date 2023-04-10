@@ -161,7 +161,3 @@ def estimate_kinetic_energy_importance_sampling(
         np.mean(kinetic_samples),
         np.std(kinetic_samples, ddof=1) / num_samples**0.5,
     )
-
-
-def sigma_time(time, sigma, stopping_deriv, mass_proj):
-    return sigma * (1 + stopping_deriv * time / mass_proj)
