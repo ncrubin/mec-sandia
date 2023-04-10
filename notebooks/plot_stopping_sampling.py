@@ -61,6 +61,7 @@ box_length = volume_bohr ** (1.0 / 3.0)
 print("box_length = {} bohr".format(box_length))
 
 
+all_sims = []
 def plot_figures(read_from_file=False):
     outdir = "stopping_sampling_data"
     #read_from_file = False 
@@ -114,6 +115,7 @@ def plot_figures(read_from_file=False):
             color=colors[isamp],
             label=r"$N_s$ = {:d}".format(num_samples),
         )
+        all_sims.append(sim_res)
     plt.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
     plt.axhline(stopping_err_au, color="grey", alpha=0.5)
     plt.axhline(-stopping_err_au, color="grey", alpha=0.5)
@@ -126,13 +128,14 @@ def plot_figures(read_from_file=False):
 
     # Plot ns = 10_000
     plt.cla()
-    plt.plot(velocity_au, act_res, label="expected", lw=0, marker="D", color=colors[0])
-    vals = [abs(s.stopping) for s in sim_res]
-    errs = [s.stopping_err for s in sim_res]
-    plt.errorbar(velocity_au, vals, yerr=errs, fmt="o", label="sampling", color=colors[1], markerfacecolor="None")
+    # plt.plot(velocity_au, act_res, label="expected", lw=0, marker="D", color=colors[0])
+    for isamp, num_samples in enumerate([1_000, 10_000, 50_000]):
+        vals = [abs(s.stopping) for s in all_sims[isamp]]
+        errs = [s.stopping_err for s in all_sims[isamp]]
+        plt.errorbar(velocity_au, vals, yerr=errs, fmt="o", label=f"$N_s$ = {num_samples}", color=colors[isamp], markerfacecolor="None")
     xs = np.linspace(velocity_au[0], velocity_au[-1], 100)
-    plt.plot(xs, stopping_spl(xs), color=colors[2], label="DFT Data")
-    plt.legend()
+    plt.plot(xs, stopping_spl(xs), color=colors[3], label="DFT Data")
+    plt.legend(fontsize=10, ncol=1, frameon=False)
     plt.xlabel("Velocity [au]", fontsize=14)
     plt.ylabel("Stopping Power [au]", fontsize=14)
     plt.tick_params(which='both', labelsize=14, direction='in')
