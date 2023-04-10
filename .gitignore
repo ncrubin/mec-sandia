@@ -138,3 +138,5 @@ src/fqe/lib/_fqe_data.c
 *.dat
 *.npz
 *.npy
+*.json
+*.pdf
