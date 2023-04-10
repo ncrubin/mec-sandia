@@ -32,7 +32,7 @@ class StoppingPowerData:
 
 
 @dataclass
-class DFTStoppingData:
+class DFTStoppingPowerData:
     times: np.ndarray
     position: np.ndarray
     work: np.ndarray
@@ -46,7 +46,7 @@ class DFTStoppingData:
 
 def parse_stopping_data(
     filename, v_proj, mass_proj=1836, num_points=20
-) -> DFTStoppingData:
+) -> DFTStoppingPowerData:
     qData1 = np.loadtxt(filename)
     position_au = qData1[:, 0] / Bohr
     time_au = position_au / v_proj
@@ -83,12 +83,12 @@ def compute_stopping_power(
     kproj_vals: np.ndarray,
     stopping_deriv: float,
     mass_proj: float,
-    ndim: int = 1,
+    ndim: int = 3,
     num_samples: int = 10_000,
 ) -> StoppingPowerData:
     sigma_tvals = compute_sigma_time(time_vals, sigma0, stopping_deriv, mass_proj)
     func = lambda x, k: estimate_kinetic_energy_sampling(
-        ecut_hartree, box_length, x, ndim=3, num_samples=num_samples, kproj=k
+        ecut_hartree, box_length, x, ndim=ndim, num_samples=num_samples, kproj=k
     )
     values = [func(sigma_t, kproj) for (sigma_t, kproj) in zip(sigma_tvals, kproj_vals)]
     yvals, errs = zip(*values)
