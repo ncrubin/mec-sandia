@@ -693,14 +693,18 @@ eps_mt = numpy.array([
 
 
 def M1(k, K):
-    return numpy.ceil(numpy.log2(factorial(K) * numpy.sum([1/factorial(k1) for  k1 in range(k,  K+1)]
+    return numpy.ceil(numpy.log2(factorial(K) * numpy.sum([1/factorial(k1) for  k1 in range(k,  K + 1)]
                                                 )
                           )
                    )
 
 def g1(x, n):
-    asin_val = 0.5 / numpy.sqrt(x)
-    floored_val = numpy.floor(2**n * asin_val / (2 * numpy.pi))
+    """
+    g1[x_, n_] := Floor[2^n*ArcSin[(1/2)/Sqrt[x]]/(2 \[Pi])
+                        ] * 2 \[Pi] / 2^n 
+    """
+    asin_val = numpy.arcsin(0.5 / numpy.sqrt(x))
+    floored_val = numpy.floor(2**n * asin_val / (2 * numpy.pi) )
     return floored_val * 2 * numpy.pi / 2**n
 
 def h1(x, n):
@@ -762,11 +766,13 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     #  \[Lambda]_\[Nu]. We start with a very large  guess for the number 
     # of bits to use for M (precision in \[Nu] \ preparation) then adjust it.*)
     p = pv[np-1, 49]
+
     
     # (*Now compute the lambda-values.*)
     # (*Here 64*(2^np-1))*p is \[Lambda]_\[Nu].*)
     tmp = (64*(2**np - 1)) * p * eta / (2 * numpy.pi * Omega**(1/3))
-    
+
+   
     # (*See Eq. (D31) or (25).*)
     lam_UV = tmp * (eta - 1 + 2 * lam_zeta)
     
@@ -807,7 +813,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
         eps_ph = 10**(-100)
     #print(eps_ph, epsM, epsR)
     # (*The number of iterations of the phase measurement.*)
-    
+
     # # (*See Eq. (127).*) 
     lam_1 = max(lam_T + lam_U + lam_V, (lam_U + lam_V / (1 - 1 / eta)) / p) / (Peq0 * Peq1* Peq3) 
     lam_2 = max(lam_T + lam_U + lam_V, (lam_U + lam_V / (1 - 1 / eta)) /pamp) / (Peq0 * Peq1 * Peq3)
@@ -860,9 +866,9 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     cr = n_eta_zeta + 2 * n_eta + 6*np + nM + 16
 
     # (*First the cost without the amplitude amplification.*)
-    cq = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + cr) 
+    cq = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + cr)  * m1
     # (*Next the cost with the amplitude amplification.*) 
-    cqaa = (c1 + c2 + c3 + c4 + c5 + 3*c6 + c7 + c8 + c9 + cr) 
+    cqaa = (c1 + c2 + c3 + c4 + c5 + 3*c6 + c7 + c8 + c9 + cr)  * m2
 
     # (*Qubits for qubitisation.*)
     q1 = 3 * eta * np # (*Qubits storing the momenta.*)
@@ -886,7 +892,7 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     # (*Preparing the superposition over i and j.*)
     q8 = 2 * n_eta + 5 
     # (*For preparing the superposition over \[Nu].*)
-    q9 = 3*(np + 1) + np + nM + (3*np + 2) + (2*np + 1) + (3*np^2 - np - 1 + 4*nM*(np + 1)) + 1 + 2
+    q9 = 3*(np + 1) + np + nM + (3*np + 2) + (2*np + 1) + (3*np**2 - np - 1 + 4*nM*(np + 1)) + 1 + 2
 
     # (*The nuclear positions.*)
     q10 = 3*nR 
@@ -900,8 +906,69 @@ def pw_qubitization_costs(np, eta, Omega, eps, nMc, nbr, L):
     q14 = 6
     # (*Arithmetic for phasing for nuclear positions.*)
     q15 = 2*(nR - 2) 
-    qt = q1 + q3 + q4 + q5 + q6 + q7 + q8 + q10 + q11 + q12 + q13 + q14 # + # q9
+    qt = q1 + q3 + q4 + q5 + q6 + q7 + q8 + q10 + q11 + q12 + q13 + q14 + q9 + q2
 
-    final_cost_toffoli, final_lambda, qpe_lam = (cq, lam_1, m1) if cq * m1 < cqaa * m2 else (cqaa, lam_2, m2)
+    # final_cost_toffoli, final_lambda, qpe_lam = (cq, lam_1, m1) if cq * m1 < cqaa * m2 else (cqaa, lam_2, m2)
 
-    return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
+    # return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
+    return min(cq, cqaa), int(qt)
+
+if __name__ == "__main__":
+    # Let's read in the Carbon example provided by Sandia
+    from mec_sandia.vasp_utils import read_vasp
+    from mec_sandia.config import VASP_DATA
+    import os
+    
+    ase_cell = read_vasp(os.path.join(VASP_DATA, "H_2eV_POSCAR"))
+    # Next we can get some system paramters
+    volume_ang = ase_cell.get_volume()
+    print("Volume = {} A^3".format(volume_ang))
+    
+    # To compute rs parameter we need volume in Bohr
+    from ase.units import Bohr
+    volume_bohr = volume_ang / Bohr**3
+    # and the number of valence electrons
+    num_elec = numpy.sum(ase_cell.get_atomic_numbers())
+    num_nuclei = len(numpy.where(ase_cell.get_atomic_numbers() == 1)[0])
+    from mec_sandia.vasp_utils import compute_wigner_seitz_radius
+    # Get the Wigner-Seitz radius
+    rs = compute_wigner_seitz_radius(volume_bohr, num_elec)
+    # print("rs = {} bohr".format(rs))
+    # print("eta = {} ".format(num_elec))
+    
+    num_bits_momenta = 6 # Number of bits in each direction for momenta
+    eps_total = 1e-3 # Total allowable error
+    num_bits_nu = 6 # extra bits for nu 
+
+    """
+    :params:
+       np is the number of bits in each direction for the momenta
+       eta is the number of electrons
+       Omega cell volume in Bohr^3
+       eps is the total allowable error
+       nMc is an adjustment for the number of bits for M (used in nu preparation
+       nbr is an adjustment in the number of bits used for the nuclear positions
+       L is the number of nuclei
+       zeta is the charge of the projectile
+    """
+    # print("eta = ", num_elec)
+    # print("Omega = ", volume_bohr)
+    # print("eps = ", eps_total)
+    # print("nMc = ", num_bits_nu)
+    # print("nbr = ", 20)
+    # print("L = ", num_nuclei)
+    # print("zeta = ", 2)
+    print()
+    print()
+    print()
+    # 10713262656  2670243099
+    # 10735480248  2675780756
+    qpe_cost, num_logical_qubits = \
+    pw_qubitization_costs(np=num_bits_momenta, 
+                          eta=num_elec, 
+                          Omega=volume_bohr, 
+                          eps=eps_total, 
+                          nMc=num_bits_nu,
+                          nbr=20,
+                          L=num_nuclei)
+    print(qpe_cost, num_logical_qubits)
