@@ -6,7 +6,7 @@ from mec_sandia.ft_pw_resource_estimates import pv, eps_mt, M1, g1, h1, g2, h2, 
 # Probability of success for creating the superposition over 3 basis states
 Peq0 = Eq(3, 8)
 
-def pw_qubitization_with_projectile_costs(np, eta, Omega, eps, nMc, nbr, L, zeta):
+def pw_qubitization_with_projectile_costs(np, eta, Omega, eps, nMc, nbr, L, zeta, phase_estimation_costs=False):
     """
     :params:
        np is the number of bits in each direction for the momenta
@@ -18,6 +18,8 @@ def pw_qubitization_with_projectile_costs(np, eta, Omega, eps, nMc, nbr, L, zeta
        nbr is an adjustment in the number of bits used for the nuclear positions
        L is the number of nuclei
        zeta is the charge of the projectile
+       phase_estimation_costs optional (bool) return phase estimation Toffoli count and qubit costs
+                              if false returns block encoding Toffoli, lambda, and num_logical qubits
     """
     # Total nuclear charge assumed to be equal to number of electrons. 
     lam_zeta = eta  
@@ -217,7 +219,16 @@ def pw_qubitization_with_projectile_costs(np, eta, Omega, eps, nMc, nbr, L, zeta
     # final_cost_toffoli, final_lambda, qpe_lam = (cq, lam_1, m1) if cq * m1 < cqaa * m2 else (cqaa, lam_2, m2)
 
     # return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
-    return min(cq, cqaa), qt
+    if phase_estimation_costs:
+        return min(cq, cqaa), qt
+    else:
+        # return block encoding cost and qubit requirement without phase estimation qubits
+        if cq < cqaa:
+            return cq / m1, lam_1, int(qt) - int(q2)
+        else:
+            return cqaa / m2, lam_2, int(qt) - int(q2)
+
+
     
 
 if __name__ == "__main__":
