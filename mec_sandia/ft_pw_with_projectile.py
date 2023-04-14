@@ -2,6 +2,9 @@ import numpy
 from math import factorial
 from sympy import factorint
 from mec_sandia.ft_pw_resource_estimates import pv, eps_mt, M1, g1, h1, g2, h2, h, Eq, Er
+from mec_sandia.pvec_epsmat import pvec as pv
+from mec_sandia.pvec_epsmat import epsmat as eps_mt
+
 
 # Probability of success for creating the superposition over 3 basis states
 Peq0 = Eq(3, 8)
@@ -476,9 +479,9 @@ if __name__ == "__main__":
     print("rs = {} bohr".format(rs))
     print("eta = {} ".format(num_elec))
     
-    num_bits_momenta = 6 # Number of bits in each direction for momenta
+    num_bits_momenta = 8 # Number of bits in each direction for momenta
     eps_total = 1e-3 # Total allowable error
-    num_bits_nu = 6 # extra bits for nu 
+    num_bits_nu = 8 # extra bits for nu 
 
     """
     :params:
