@@ -5,6 +5,7 @@ import numpy as np
 import scipy.optimize
 
 from mec_sandia.gaussians import estimate_kinetic_energy_sampling
+from mec_sandia.density_matrix import DensityMatrix
 
 
 def compute_sigma_time(time, sigma, stopping_deriv, mass_proj):
@@ -142,6 +143,53 @@ def compute_stopping_power(
         time_vals=time_vals,
         distance=distance,
         sigma_vals=sigma_tvals,
+        stopping_expected=expected_val
+    )
+    return data
+
+def compute_stopping_power_electrons(
+    eigs: np.ndarray,
+    occs: np.ndarray,
+    sigma0: float,
+    time_vals: np.ndarray,
+    kproj_vals: np.ndarray,
+    stopping_deriv: np.ndarray,
+    mass_proj: float,
+    num_samples: int = 10_000,
+) -> StoppingPowerData:
+    """Slight overkill"""
+    def func(kproj, k0):
+        dm_1eV = DensityMatrix.build_grand_canonical(occs, num_samples)
+        e1b, err = dm_1eV.contract_diagonal_one_body(eigs)
+        energy_proj = np.dot(kproj, kproj) / (2*mass_proj) - np.dot(k0, k0) / (2*mass_proj)
+        e1b += -1*energy_proj
+        return e1b, err
+    values = [func(kproj, kproj_vals[0]) for kproj in kproj_vals]
+    yvals, errs = zip(*values)
+    yvals = np.array(yvals)
+    errs = np.array(errs)
+    velocity_vals = kproj_vals[:, 0] / mass_proj
+    distance = time_vals * velocity_vals
+    popt, pcov = scipy.optimize.curve_fit(
+        _fit_linear, distance, yvals, sigma=errs, absolute_sigma=True
+    )
+    slope, incpt = popt
+    slope_err = np.sqrt(pcov[0, 0])
+    sigma_tvals = compute_sigma_time(time_vals, sigma0, stopping_deriv, mass_proj)
+    yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (2 * mass_proj)
+    xvals = distance
+    expected_val = compute_stopping_exact(xvals, yvals)
+    data = StoppingPowerData(
+        stopping=slope,
+        stopping_err=slope_err,
+        kinetic=yvals,
+        kinetic_err=errs,
+        num_samples=num_samples,
+        intercept=incpt,
+        intercept_err=np.sqrt(pcov[0, 0]),
+        time_vals=time_vals,
+        distance=distance,
+        sigma_vals=np.zeros_like(kproj_vals),
         stopping_expected=expected_val
     )
     return data
