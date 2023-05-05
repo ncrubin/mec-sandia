@@ -81,12 +81,12 @@ for sigma_k in [1, 4, 6, 10]:
     stopping_deriv = abs(stopping_deriv_spl(vel))
     num_mc_samples = [5, 10, 50, 100, 500, 1000]
     for itime, max_time in enumerate([5, 10, 20, 30, 40, 50]):
-        for num_pts in [3, 5, 10, 20]:
+        for num_pts in [5, 10, 20]:
             dft_data = parse_stopping_data(
                 f"AndrewsFirstGaussian/{vel}_work_vs_dist",
                 vel,
                 mass_proj=mass_proj,
-                num_points=20,
+                num_points=num_pts,
                 rare_event=0.25,
                 random_sub_sample=False,
                 max_time=max_time,
@@ -108,7 +108,6 @@ for sigma_k in [1, 4, 6, 10]:
                     num_samples=num_samples,
                 )
                 sim_res.append(stopping_data)
-                yvals = dft_data.kproj_sub_sample**2.0 / (2 * mass_proj)
             vals = [abs(s.stopping) for s in sim_res]
             errs = [s.stopping_err for s in sim_res]
             # Plot samples along x, multiple points.
