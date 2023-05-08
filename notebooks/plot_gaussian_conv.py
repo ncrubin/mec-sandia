@@ -1,10 +1,9 @@
-import numpy as np
-from ase.units import Hartree
 import math
-import matplotlib.pyplot as plt
-from pyscf.lib.numpy_helper import cartesian_prod
 
 import matplotlib.pyplot as plt
+import numpy as np
+from ase.units import Hartree
+from pyscf.lib.numpy_helper import cartesian_prod
 
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = "arial"
@@ -32,7 +31,6 @@ def get_ngmax(ecut, box_length):
 L_bohr = 15
 from dataclasses import dataclass, field
 from typing import List
-
 
 nx_grid = 2**np.arange(2, 9)  # quantum algorithm takes things as a power of 2
 ke_cutoffs_eV = 0.5 * (2 * np.pi)**2 * nx_grid**2 / L_bohr**2 * 27.11 # highest energy components in eV
@@ -84,7 +82,6 @@ for sigma_k, res_dict in sigmas.items():
         print("norm exact = ", _prefactor)
         print("norm sum= ", prefactor)
         print("sigma = ", sigma_k)
-        # print(ecut_ev, L_bohr/nmax, sigma_k, ke_sum-ke_int, ke_int-sum(xs**2.0*np.exp(-xs**2.0/(2*sigma_k**2.0))*_prefactor/grid_spacing*dg)/(2*mass_proj), prefactor, _prefactor)
         if ecut_ev == 1e5:
             plt.plot(xs, xs**2.0*np.exp(-xs**2.0/(2*sigma_k**2.0))*_prefactor, marker="o", label="continuous")
             plt.plot(xs, np.exp(-xs**2.0/(2*sigma_k**2.0))*_prefactor, marker="o", label="continuous")
@@ -96,7 +93,7 @@ for sigma_k, res_dict in sigmas.items():
 
 plt.cla()
 ax.tick_params(which='both', labelsize=14, direction='in')
-ax.set_xlabel("$E_{cut}$ [eV]", fontsize=14)
+ax.set_xlabel(r"$E_{\mathrm{cut}}$ [eV]", fontsize=14)
 ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
 ax.tick_params(which='both', labelsize=14, direction='in')
 ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
