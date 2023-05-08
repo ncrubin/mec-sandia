@@ -1,12 +1,13 @@
-from ase.units import Bohr, Hartree
-from dataclasses import dataclass
-from typing import Union
 import json
+from dataclasses import dataclass
+from typing import Tuple, Union
+
 import numpy as np
 import scipy.optimize
+from ase.units import Bohr, Hartree
 
-from mec_sandia.gaussians import estimate_kinetic_energy_sampling
 from mec_sandia.density_matrix import DensityMatrix
+from mec_sandia.gaussians import estimate_kinetic_energy_sampling
 
 
 def compute_sigma_time(time, sigma, stopping_deriv, mass_proj):
@@ -73,6 +74,8 @@ class DFTStoppingPowerData:
     kproj_sub_sample: np.ndarray
     time_sub_sample: np.ndarray
     distance: np.ndarray
+    max_time: Tuple[int, float]
+    distance_sub_sample: np.ndarray
     stopping: float = 0.0
 
 
@@ -102,8 +105,8 @@ def parse_stopping_data(
     mass_proj: int = 1836,
     num_points: int = 20,
     rare_event: float = -1,
-    random_sub_sample: bool=True,
-    max_time: float=-1,
+    random_sub_sample: bool = True,
+    max_time: float = -1,
     stopping_data_filename: Union[str, None] = None,
 ) -> DFTStoppingPowerData:
     qData1 = np.loadtxt(filename)
@@ -121,13 +124,13 @@ def parse_stopping_data(
         keep = np.arange(len(time_au))
     # TODO: Replace this with Alina's sampling!
     time_keep = time_au[keep]
-    max_time_indx = np.where(time_keep < max_time)[0][-1]
+    max_time_indx = np.where(time_keep < max_time)[0][-1] + 1
     time_keep = time_keep[:max_time_indx]
     if random_sub_sample:
         sub_sample = np.random.choice(np.arange(len(time_keep[keep])), num_points)
     else:
         len_data = len(time_keep)
-        skip_every = len_data//num_points + 1
+        skip_every = len_data // num_points + 1
         sub_sample = np.arange(len_data)[::skip_every]
     time_vals = time_au[keep][sub_sample]
     # Sorting because sub_sample will not be ordered
@@ -152,6 +155,8 @@ def parse_stopping_data(
         kproj_x_vals,
         time_vals,
         time_au[keep] * velocity_time[keep],
+        max_time=(max_time_indx, max_time),
+        distance_sub_sample=time_vals * velocity_time[keep][sub_sample][ix],
         stopping=stopping,
     )
     return data
