@@ -23,6 +23,7 @@ def test_stopping_power():
         mass_proj,
         num_samples=100,
     )
+    # Update 5/8/23: Changing from Gaussian wavepacket returning prob dist rather than wavepacket.
     # assert np.isclose(stopping_data.stopping, -0.006962978108035145)
     assert np.isclose(stopping_data.stopping, -0.006951327941948193)
     assert len(stopping_data.kinetic) == 20

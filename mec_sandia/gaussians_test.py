@@ -99,7 +99,6 @@ def test_sampling():
     ke, ke_err = estimate_kinetic_energy_sampling(
         ecut, box_length, sigma, ndim=1, num_samples=10_000
     )
-    print(ke, sigma**2.0/2.0)
     assert np.isclose(ke, sigma**2.0 / 2, atol=5 * ke_err)
     ke, ke_err = estimate_kinetic_energy_sampling(
         ecut, box_length, sigma, ndim=3, num_samples=100_000
