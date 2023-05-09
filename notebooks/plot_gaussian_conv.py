@@ -17,7 +17,7 @@ v_proj = 4.0  # atomic units just taken from carbon
 mass_proj = 1836
 ke = 0.5 * mass_proj * v_proj**2.0  # classical ke
 kproj = np.array([mass_proj * v_proj, 0, 0])
-#kproj[0] = 0.0
+kproj[0] = 0.0
 sigma_k = 4.0
 
 
@@ -56,7 +56,7 @@ for sigma_k, res_dict in sigmas.items():
     for ecut_ev in res_dict.cutoffs:
         ecut_ha = ecut_ev / Hartree
         nmax = get_ngmax(ecut_ha, L_bohr)
-        kgrid = np.arange(-nmax/2, nmax/2)
+        kgrid = np.arange(-nmax/2, nmax/2+1)
         grid_spacing = 2 * np.pi / L_bohr
         kxyz_grid = grid_spacing * kgrid
         kpsq = (kxyz_grid + kproj[0]) ** 2.0
@@ -67,7 +67,7 @@ for sigma_k, res_dict in sigmas.items():
         prefactor = 1.0 / np.sum(gaussian)
         ke_sum = sum_k * prefactor / (2 * mass_proj)
         ke_int = (sigma_k**2.0 + np.dot(kproj, kproj))/ (2 * mass_proj)
-        res_dict.deltas.append(np.sqrt(np.abs(ke_sum)) - np.sqrt(ke_int))
+        res_dict.deltas.append(np.abs(ke_sum-ke_int))
         res_dict.norm.append(prefactor)
         res_dict.norm_inf.append(_prefactor)
         res_dict.integral_val.append(ke_int)
@@ -97,7 +97,7 @@ ax.set_xlabel(r"$E_{\mathrm{cut}}$ [eV]", fontsize=14)
 ax.set_ylabel(r"Projectile Kinetic Energy Error [Ha]", fontsize=14)
 ax.tick_params(which='both', labelsize=14, direction='in')
 ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
-ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
+#ax.set_title("One Dimensional Gaussian Kinetic Energy standard Error")
 ax.set_xscale("log")
 ax.set_yscale("log")
 plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
@@ -109,8 +109,8 @@ for i, sigma_k in enumerate(list(sigmas.keys())[::-1]):
         label=rf"$\sigma_k$ = {sigma_k}",
         color=colors[i],
     )
-plt.ylim([1e-11, 1e-2])
+#plt.ylim([1e-11, 1e-2])
 ax.legend(loc='lower left', fontsize=10, ncol=1, frameon=False)
 plt.ylabel("Kinetic Energy Error (Ha)", fontsize=14)
-plt.savefig("cutoff_convergence_1d.pdf", bbox_inches="tight", dpi=300)
-plt.savefig("cutoff_convergence_1d.png", bbox_inches="tight", dpi=300)
+plt.savefig(f"cutoff_convergence_1d_{kproj[0]}.pdf", bbox_inches="tight", dpi=300)
+plt.savefig(f"cutoff_convergence_1d_{kproj[0]}.png", bbox_inches="tight", dpi=200)

@@ -1,10 +1,10 @@
-from dataclasses import dataclass
-from sys import float_info
-import numpy as np
-from typing import Tuple, Union
 import math
-from pyscf.lib.numpy_helper import cartesian_prod
+from re import I
+from typing import Tuple, Union
+
+import numpy as np
 import scipy.optimize
+from pyscf.lib.numpy_helper import cartesian_prod
 
 
 def estimate_error_kinetic_energy(kcut: float, sigma: float) -> float:
@@ -61,11 +61,11 @@ def _build_gaussian(
             ndim,
         )
     nmax = get_ngmax(ecut_hartree, box_length)
-    grid = (np.arange(-nmax / 2, nmax / 2, dtype=int),) * ndim
+    grid = (np.arange(-nmax / 2, nmax / 2 + 1, dtype=int),) * ndim
     grid_spacing = 2 * np.pi / box_length
     kgrid = grid_spacing * cartesian_prod(grid)
     gaussian = np.exp(
-        -(np.sum((kgrid - mu[None, :]) ** 2.0, axis=-1)) / (2 * sigma**2.0)
+        -(np.sum((kgrid - mu[None, :]) ** 2.0, axis=-1)) / (4 * sigma**2.0)
     )
     return gaussian, kgrid
 
@@ -76,9 +76,30 @@ def discrete_gaussian_wavepacket(
     sigma: float,
     ndim: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray, float]:
+    r"""Build a discrete Gaussian wavepacket.
+
+    This function builds the amplitudes associated with
+    $
+        |\psi\rangle &= \frac{1}{\mathcal{N}} \sum_\mathbf{k} e^{\mathbf{k}^2/(4\sigma_k^2)} |\mathbf{k}\rangle \\
+                     &= \sum_\mathbf{k} \sqrt{p_k} |\mathbf{k}\rangle
+    $
+    
+    Args:
+        ecut_hartree: Cutoff energy in Hartree. This defines the k-grid size for
+            the wavepacket. See get_ngmax.
+        box_length: The boxlength in bohr.
+        sigma: The reciprocal space wavepacket standard deviation. sigma^2 =
+            variance.
+        ndim: The number of dimensions.
+
+    Returns:
+        sqrt_pk: The wavefunction amplitudes defined above ($\sqrt{p_k}$).
+        kgrid: The k-space grid.
+        normalization: The normalization factor for the Gaussian.
+    """
     assert ndim > 0
     gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
-    normalization = np.sum(gaussian)
+    normalization = np.sqrt(np.sum(gaussian**2.0))
     return gaussian / normalization, kgrid, normalization
 
 
@@ -101,11 +122,11 @@ def kinetic_energy(
         kproj = np.zeros(
             ndim,
         )
-    gaussian, kgrid, norm = discrete_gaussian_wavepacket(
+    gaussian, kgrid, _ = discrete_gaussian_wavepacket(
         ecut_hartree, box_length, sigma, ndim=ndim
     )
-    kinetic_energy = _calc_kinetic_energy(kgrid, kproj, gaussian)
-    return kinetic_energy
+    ke = _calc_kinetic_energy(kgrid, kproj, gaussian**2.0)
+    return ke
 
 
 def estimate_kinetic_energy_sampling(
@@ -121,9 +142,10 @@ def estimate_kinetic_energy_sampling(
         kproj = np.zeros(
             ndim,
         )
+    # Builds |psi> = N^{-1/2} e^{-k^2/(4sigma^2)}
     gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
-    norm = np.sum(gaussian)
-    indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=gaussian / norm)
+    norm = np.sum(gaussian**2.0)
+    indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=gaussian**2.0 / norm)
     k_select = kgrid[indx_k]
     kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1)
     if shift_by_constant:
@@ -148,7 +170,7 @@ def estimate_kinetic_energy_importance_sampling(
             ndim,
         )
     gaussian, kgrid = _build_gaussian(ecut_hartree, box_length, sigma, ndim=ndim)
-    p_x = gaussian / sum(gaussian)
+    p_x = gaussian**2.0 / sum(gaussian**2.0)
     q_x = importance_function
     indx_k = np.random.choice(np.arange(len(kgrid)), num_samples, p=q_x)
     k_select = kgrid[indx_k]
