@@ -1,15 +1,14 @@
 import numpy as np
-from mec_sandia.gaussians import (
-    _build_gaussian,
-    discrete_gaussian_wavepacket,
-    estimate_energy_cutoff,
-    estimate_error_kinetic_energy,
-    estimate_kinetic_energy_importance_sampling,
-    estimate_kinetic_energy_sampling,
-    kinetic_energy,
-    estimate_kinetic_energy,
-)
 import pytest
+
+from mec_sandia.gaussians import (_build_gaussian,
+                                  discrete_gaussian_wavepacket,
+                                  estimate_energy_cutoff,
+                                  estimate_error_kinetic_energy,
+                                  estimate_kinetic_energy,
+                                  estimate_kinetic_energy_importance_sampling,
+                                  estimate_kinetic_energy_sampling,
+                                  kinetic_energy)
 
 
 def test_discrete_gaussian_wavepacket():
@@ -19,34 +18,35 @@ def test_discrete_gaussian_wavepacket():
     gaussian, kmesh, norm = discrete_gaussian_wavepacket(
         ecut, box_length, sigma, ndim=1
     )
-    norm_exact = (sigma * box_length) / (np.sqrt(2 * np.pi))
-    assert gaussian.shape == (151,)
-    assert kmesh.shape == (151, 1)
-    assert np.allclose(norm_exact, norm)
+    factor = 2 * np.pi / box_length
+    norm_exact = np.sqrt(2 * np.pi) * sigma
+    assert gaussian.shape == (152,)
+    assert kmesh.shape == (152, 1)
+    assert np.allclose(norm_exact, factor*norm**2.0)
     gaussian, kmesh, norm = discrete_gaussian_wavepacket(
         ecut, box_length, sigma, ndim=2
     )
-    assert gaussian.shape == (151**2,)
-    assert kmesh.shape == (151**2, 2)
-    norm_exact = (sigma**2.0 * box_length**2.0) / (2 * np.pi)
-    assert np.allclose(norm_exact, norm)
+    assert gaussian.shape == (152**2,)
+    assert kmesh.shape == (152**2, 2)
+    norm_exact = (np.sqrt(2 * np.pi) * sigma)**2.0
+    assert np.allclose(norm_exact, factor**2.0*norm**2.0)
     gaussian, kmesh, norm = discrete_gaussian_wavepacket(
         ecut, box_length, sigma, ndim=3
     )
-    assert gaussian.shape == (151**3,)
-    assert kmesh.shape == (151**3, 3)
-    norm_exact = (sigma**3.0 * box_length**3.0) / ((2 * np.pi) ** (3 / 2.0))
-    assert np.allclose(norm_exact, norm)
+    assert gaussian.shape == (152**3,)
+    assert kmesh.shape == (152**3, 3)
+    norm_exact = (np.sqrt(2 * np.pi) * sigma)**3.0
+    assert np.allclose(norm_exact, factor**3.0 * norm**2.0)
     sigma = 1
     box_length = 15
     ecut = 200
     gaussian, kmesh, norm = discrete_gaussian_wavepacket(
         ecut, box_length, sigma, ndim=4
     )
-    assert gaussian.shape == (48**4,)
-    assert kmesh.shape == (48**4, 4)
-    norm_exact = (sigma**4.0 * box_length**4.0) / ((2 * np.pi) ** (2.0))
-    assert np.allclose(norm_exact, norm)
+    assert gaussian.shape == (49**4,)
+    assert kmesh.shape == (49**4, 4)
+    norm_exact = (np.sqrt(2 * np.pi) * sigma)**4.0
+    assert np.allclose(norm_exact, factor**4.0 * norm**2.0)
 
 
 def test_kinetic_energy():
@@ -99,6 +99,7 @@ def test_sampling():
     ke, ke_err = estimate_kinetic_energy_sampling(
         ecut, box_length, sigma, ndim=1, num_samples=10_000
     )
+    print(ke, sigma**2.0/2.0)
     assert np.isclose(ke, sigma**2.0 / 2, atol=5 * ke_err)
     ke, ke_err = estimate_kinetic_energy_sampling(
         ecut, box_length, sigma, ndim=3, num_samples=100_000
