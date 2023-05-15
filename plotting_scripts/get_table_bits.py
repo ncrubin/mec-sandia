@@ -3,7 +3,7 @@ from ase.units import Hartree
 
 box_length = 15
 ecut_ev = np.logspace(1, 5, 8)
-mass_proj = 1836
+mass_proj = 1836 * 4
 prefactor = 1.0 / mass_proj
 from mec_sandia.gaussians import (estimate_error_kinetic_energy, get_ngmax,
                                   kinetic_energy)
