@@ -463,7 +463,6 @@ def pw_qubitization_with_projectile_costs_from_v4(np, nn, eta, Omega, eps, nMc, 
        eta is the number of electrons
        Omega cell volume in Bohr^3
        eps is the total allowable error
-       eps_mt is the precomputed discretisation errors for the nu preparation
        nMc is an adjustment for the number of bits for M (used in nu preparation
        nbr is an adjustment in the number of bits used for the nuclear positions
        L is the number of nuclei
