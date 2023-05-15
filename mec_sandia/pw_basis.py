@@ -147,16 +147,16 @@ class SquareBoxPlanewaves:
 if __name__ == "__main__":
     from mec_sandia.vasp_utils import read_vasp
     from mec_sandia.vasp_utils import compute_wigner_seitz_radius
+    from mec_sandia.config import VASP_DATA
     from pyscf.pbc import gto
     import pyscf.pbc.tools.pyscf_ase as pyscf_ase
     import numpy as np
+    import os
 
-    ase_cell = read_vasp(f"vasp_data/D_POSCAR")  # this data is in Angstrom
+    ase_cell = read_vasp(os.path.join(VASP_DATA, "D_POSCAR"))  # this data is in Angstrom
     atom = pyscf_ase.ase_atoms_to_pyscf(ase_cell)
-
-    deuterium_a = np.array([[8.325876, 0.      , 0.      ],
-                            [0.      , 8.325876, 0.      ],
-                            [0.      , 0.      , 8.325876]]) * 1.889726124914664 # convert to Bohr
+    ase_cell = read_vasp(os.path.join(VASP_DATA, "H_2eV_POSCAR"))  # this data is in Angstrom
+    atom = pyscf_ase.ase_atoms_to_pyscf(ase_cell)
 
     cell = gto.M(a=ase_cell.cell.array,
                  atom = atom,
@@ -164,10 +164,10 @@ if __name__ == "__main__":
                  pseudo = 'gth-pade',
                  unit='angstrom',
                  verbose = 0,
-                 ke_cutoff = 1000 / 27.21138602, # in atomic units. This would be 10 eV in atomic units
+                 ke_cutoff = 2000 / 27.21138602, # in atomic units. This would be 10 eV in atomic units
                  precision = 1.0e-8,
                  charge = 0,
-                 spin = 1,
+                 spin = 0,
                  dimension = 3)
 
     cell_vol = np.linalg.det(cell.lattice_vectors())
@@ -185,11 +185,14 @@ if __name__ == "__main__":
             assert np.isclose(g2tmp/2, 2 * np.pi**2 * (i**2 + j**2 + k**2) / cell_vol**(2/3))
     
 
-    #E = (1/2) * (px**2 + py**2 + pz**2) * 4 * np.pi**2 / cell_vol**(2/3))
-    # max in direction = sqrt(4 * 2 * E) = sqrt(px**2 + py**2 + pz**2) * 2 * np.pi / cell_vol**(1/3)
-    # sqrt(px**2 + py**2 + pz**2) = |g| norm g.
-    max_dim = int(np.ceil(np.sqrt(4 * 2 * cell.ke_cutoff) / (2 * np.pi) * cell_vol**(1/3)))
+    print(cell.ke_cutoff)
+    
+    p_max = np.ceil(cell_vol**(1/3) * np.sqrt(cell.ke_cutoff * 2) / (2 * np.pi))
+    kp_max = 2 * np.pi * p_max / cell_vol**(1/3)
+    max_ke = kp_max**2 / 2
+    lower_bound_p_max = np.floor(cell_vol**(1/3) * np.sqrt(cell.ke_cutoff * 2) / (2 * np.pi))
+    kp_floor = 2 * np.pi * lower_bound_p_max / cell_vol**(1/3)
+    lower_bound_ke = kp_floor**2 / 2
+    assert lower_bound_ke < cell.ke_cutoff and cell.ke_cutoff < max_ke
 
-    reciprocal_max_dim_1 = int( np.ceil( (np.sqrt(2.0*4.0*cell.ke_cutoff) / (2.0 * np.pi) ) * cell_vol**(1/3)))
-    inst = SphericalCutoffPlanewaves(cell_dim=cell.lattice_vectors(), cutoff_energy=1000 / 27.21138602 )
-    inst.ke_cuttoff_to_grid(inst.cutoff_energy, inst.a, inst.b)
+    print(p_max, 2 * p_max + 1, "np = ", np.ceil(np.log2(2 * p_max + 2)))
