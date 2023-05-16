@@ -185,14 +185,18 @@ if __name__ == "__main__":
             assert np.isclose(g2tmp/2, 2 * np.pi**2 * (i**2 + j**2 + k**2) / cell_vol**(2/3))
     
 
-    print(cell.ke_cutoff)
-    
     p_max = np.ceil(cell_vol**(1/3) * np.sqrt(cell.ke_cutoff * 2) / (2 * np.pi))
     kp_max = 2 * np.pi * p_max / cell_vol**(1/3)
     max_ke = kp_max**2 / 2
+    print("max_ke = ", max_ke)
+    print("Pmax ", p_max)
     lower_bound_p_max = np.floor(cell_vol**(1/3) * np.sqrt(cell.ke_cutoff * 2) / (2 * np.pi))
     kp_floor = 2 * np.pi * lower_bound_p_max / cell_vol**(1/3)
     lower_bound_ke = kp_floor**2 / 2
     assert lower_bound_ke < cell.ke_cutoff and cell.ke_cutoff < max_ke
 
-    print(p_max, 2 * p_max + 1, "np = ", np.ceil(np.log2(2 * p_max + 2)))
+    np_val = np.ceil(np.log2(2 * p_max + 1 + 1))
+    print(p_max, 2 * p_max + 1, "np = ", np.ceil(np.log2(2 * p_max + 1 + 1)))
+    discrete_pmax = 2**(np_val)
+    descrete_kp = discrete_pmax * 2 * np.pi / cell_vol**(1/3)
+    print(0.5 * descrete_kp**2)
