@@ -157,6 +157,10 @@ if __name__ == "__main__":
     atom = pyscf_ase.ase_atoms_to_pyscf(ase_cell)
     ase_cell = read_vasp(os.path.join(VASP_DATA, "H_2eV_POSCAR"))  # this data is in Angstrom
     atom = pyscf_ase.ase_atoms_to_pyscf(ase_cell)
+    ase_cell = read_vasp(os.path.join(VASP_DATA, "C_POSCAR_cubic.vasp"))  # this data is in Angstrom
+    atom = pyscf_ase.ase_atoms_to_pyscf(ase_cell)
+
+
 
     cell = gto.M(a=ase_cell.cell.array,
                  atom = atom,
@@ -164,13 +168,14 @@ if __name__ == "__main__":
                  pseudo = 'gth-pade',
                  unit='angstrom',
                  verbose = 0,
-                 ke_cutoff = 2000 / 27.21138602, # in atomic units. This would be 10 eV in atomic units
+                 ke_cutoff = 1000 / 27.21138602, # in atomic units. This would be 10 eV in atomic units
                  precision = 1.0e-8,
                  charge = 0,
-                 spin = 0,
+                 spin = 1,
                  dimension = 3)
 
     cell_vol = np.linalg.det(cell.lattice_vectors())
+
     b = cell.reciprocal_vectors()
     for i, j, k in itertools.product(range(9), repeat=3):
         # G-vector
@@ -200,3 +205,5 @@ if __name__ == "__main__":
     discrete_pmax = 2**(np_val)
     descrete_kp = discrete_pmax * 2 * np.pi / cell_vol**(1/3)
     print(0.5 * descrete_kp**2)
+
+    print(cell_vol**(1/3) / (2 * p_max + 1))
