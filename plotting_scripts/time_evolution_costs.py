@@ -2,7 +2,7 @@ import os
 import numpy as np
 from mec_sandia.vasp_utils import read_vasp
 from mec_sandia.config import VASP_DATA
-from mec_sandia.ft_pw_with_projectile import pw_qubitization_with_projectile_costs_from_v4
+from mec_sandia.ft_pw_with_projectile import pw_qubitization_with_projectile_costs_from_v5
 
 from ase.units import Bohr
 import math
@@ -45,7 +45,7 @@ def time_evolution_costs():
     projectile_ke = 0.5 * projectile_mass * projectile_velocity**2
     projectile_wavenumber_au = np.sqrt(2 * projectile_ke / projectile_mass) * projectile_mass # p = m * v
     
-    blockencodingtoff, lambdaval, qubit = pw_qubitization_with_projectile_costs_from_v4(
+    blockencodingtoff, lambdaval, qubit = pw_qubitization_with_projectile_costs_from_v5(
         np=num_bits_momenta, 
         nn=num_bits_momenta + 2,
         eta=num_elec, 
@@ -67,7 +67,7 @@ def time_evolution_costs():
     for cidx, tau in enumerate(tau_vals):
             evolution_costs = []
             for eps in eps_total_vals:
-                blockencodingtoff, lambdaval, qubit = pw_qubitization_with_projectile_costs_from_v4(
+                blockencodingtoff, lambdaval, qubit = pw_qubitization_with_projectile_costs_from_v5(
                     np=num_bits_momenta, 
                     nn=num_bits_momenta + 2,
                     eta=num_elec, 
@@ -98,8 +98,8 @@ def time_evolution_costs():
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.legend(loc='upper right', fontsize=14, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
-    plt.savefig("H2_epsilon_vs_evolution_time.png", format="PNG", dpi=300)
-    plt.savefig("H2_epsilon_vs_evolution_time.pdf", format="PDF", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time_v10.png", format="PNG", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time_v10.pdf", format="PDF", dpi=300)
     plt.show()
 
 

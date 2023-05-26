@@ -92,8 +92,8 @@ def hydrogen_evolution_time_costs():
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.legend(loc='upper right', fontsize=14, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
-    plt.savefig("H2_epsilon_vs_evolution_time.png", format="PNG", dpi=300)
-    plt.savefig("H2_epsilon_vs_evolution_time.pdf", format="PDF", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time_v10.png", format="PNG", dpi=300)
+    plt.savefig("H2_epsilon_vs_evolution_time_v10.pdf", format="PDF", dpi=300)
 
 
 
