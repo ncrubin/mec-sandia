@@ -48,7 +48,7 @@ def block_encoding_costs():
     projectile_ke = 0.5 * projectile_mass * projectile_velocity**2
     projectile_wavenumber_au = np.sqrt(2 * projectile_ke / projectile_mass) * projectile_mass # p = m * v
     
-    blockencodingtoff, lambdaval, qubit = pw_qubitization_with_projectile_costs_from_v5(
+    blockencodingtoff, lambdaval, qubit, cost_dataclass = pw_qubitization_with_projectile_costs_from_v5(
         np=num_bits_momenta, 
         nn=num_bits_momenta + 2,
         eta=num_elec, 
@@ -60,9 +60,37 @@ def block_encoding_costs():
         zeta=projectile_charge,
         mpr=projectile_mass,
         kmean=projectile_wavenumber_au,
-        phase_estimation_costs=False
+        phase_estimation_costs=False,
+        return_subcosts=True
     )
     print(f"Block encdoing costs: Toffolis = {blockencodingtoff:4.3e}, lambda = {lambdaval:f} qubits = {qubit}")
+
+    print("tofc_inequality_c1",             cost_dataclass.tofc_inequality_c1)
+    print("tofc_superposition_ij_c2",       cost_dataclass.tofc_superposition_ij_c2)
+    print("tofc_superposition_wrs_c3",               cost_dataclass.tofc_superposition_wrs_c3)
+    print("tofc_controlled_swaps_c4",                cost_dataclass.tofc_controlled_swaps_c4)
+    print("tofc_extra_nuclear_momentum_c5",        cost_dataclass.tofc_extra_nuclear_momentum_c5)
+    print("tofc_nested_boxes_c6",                    cost_dataclass.tofc_nested_boxes_c6)
+    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass.tofc_prep_unprep_nuclear_via_qrom_c7)
+    print("tofc_add_subtract_momentum_for_select_c8", cost_dataclass.tofc_add_subtract_momentum_for_select_c8)
+    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass.tofc_phasing_by_structure_factor_c9)
+    print("tofc_reflection_costs_cr",                cost_dataclass.tofc_reflection_costs_cr)
+
+    print()
+    print()
+    for key, val in vars(cost_dataclass).items():
+        if 'lambda' in key:
+            if 'lambda_T' == key:
+                print(key,"\t", "{:10.10f}".format(val), ((6 * num_elec * np.pi**2) / volume_bohr**(2/3)) * (4**(num_bits_momenta - 1)))
+            elif 'lambda_Tn' == key:
+                print(key,"\t", "{:10.10f}".format(val), 6. /projectile_mass * np.pi**2 / volume_bohr**(2/3) * (4**(num_bits_momenta + 2 - 1)))
+            elif 'lambda_Tkmean' == key:
+                print(key,"\t", "{:10.10f}".format(val))
+            else:
+                print(key,"\t", "{:10.10f}".format(val))
+
+
+
 
 if __name__ == "__main__":
     block_encoding_costs()

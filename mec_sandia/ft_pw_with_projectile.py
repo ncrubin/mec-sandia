@@ -721,8 +721,12 @@ class ToffoliCostBReakdown:
     lambda_amp: float
     lambda_noamp: float
     lambda_T: float
+    lambda_Tn: float
+    lambda_Tkmean: float
     lambda_U: float
+    lambda_Un: float
     lambda_V: float
+    lambda_Vn: float
     qpe_multiplier_m1: float
     qpe_multiplier_m2: float
     
@@ -775,8 +779,8 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
        phase_estimation_costs optional (bool) return phase estimation Toffoli count and qubit costs
                               if false returns block encoding Toffoli, lambda, and num_logical qubits
     """
-    # Total nuclear charge assumed to be equal to number of electrons. 
-    lam_zeta = eta  
+    # Total nuclear charge assumed to be equal to number of electrons minus the charge of the projectile
+    lam_zeta = eta - zeta
    
     # (*This is the number of bits used in rotations in preparations of equal superposition states.
     br = 7 
@@ -818,7 +822,11 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
     # because we are using the preparation over i, j in common with the block 
     # encoding of the potential, and there the charge of the nucleus is needed.
     # lam_T = 6 * (eta + zeta) * numpy.pi**2 / Omega**(2/3) * (2**(np - 1))**2
-    lam_T = 6 * (eta + 1. / mpr) * numpy.pi**2 / Omega**(2/3) * (2**(np - 1))**2 + 2 * numpy.pi * kmean / (mpr * Omega**(1/3)) * (2**(nn - 1))**2 / (2**(nn - 1) - 1)
+    lam_T = 6 * eta * numpy.pi**2 / Omega**(2/3) * (4**(np - 1))
+    lam_T_nuc = (6./mpr) * numpy.pi**2 / Omega**(2/3) * (4**(nn - 1))
+    lam_T_kmean = 2 * numpy.pi * kmean / (mpr * Omega**(1/3)) * (2**(nn - 1))**2 / (2**(nn - 1) - 1)
+    lam_T_total = lam_T + lam_T_nuc + lam_T_kmean
+
 
     # (*Adjust value of nM based on \[Lambda]UV we just calculated.*) 
     nM = nMc + int(numpy.rint(numpy.log2(20 * lam_UV / eps)))
@@ -860,8 +868,8 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
     nrf += (64*(2**nn - 1)) * pn * zeta * lam_zeta / Omega**(1/3)
     nR = nbr + numpy.rint(numpy.log2(nrf/eps))
 
-    lam_1 = max(lam_T + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pn + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / p) / (Peq0*Peq1* Peq3) # (*See Eq. (127).*)
-    lam_2 = max(lam_T + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pnmp + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / pamp) / (Peq0*Peq1* Peq3)  #  (*See Eq. (126).*)
+    lam_1 = max(lam_T_total + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pn + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / p) / (Peq0*Peq1* Peq3) # (*See Eq. (127).*)
+    lam_2 = max(lam_T_total + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pnmp + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / pamp) / (Peq0*Peq1* Peq3)  #  (*See Eq. (126).*)
 
     lam_tot_temp = max(lam_1, lam_2)
     # print(lam_T + lam_U + lam_Un + lam_V + lam_Vn)
@@ -870,7 +878,6 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
     epsR =  nrf/2**nR  
     nT = 10 + numpy.rint(numpy.log2(lam_tot_temp / eps))
     epsT = 5 * lam_tot_temp / 2**(nT)
-
 
     # The number of iterations of the phase measurement. 
     # In the following the 1/(1 - 1/\[Eta]) is replaced according to the following reasoning. 
@@ -883,15 +890,10 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
         eps_ph = 10**(-100)
 
     # # # (*See Eq. (127).*) 
-    # lam_1 = max(lam_T + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pn + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / p) / (Peq0*Peq1* Peq3) # (*See Eq. (127).*)
-    # lam_2 = max(lam_T + lam_U + lam_Un + lam_V + lam_Vn, lam_Un / pnmp + (lam_U + lam_Vn + lam_V / (1 - 1 / eta)) / pamp) / (Peq0*Peq1* Peq3)  #  (*See Eq. (126).*)
-    # (*The P_eq is from Eq. (130), with P_s(\[Eta]+2\[Lambda]\[Zeta]) replaced with P_s(3,8). This is because we are taking \[Eta]=\[Lambda]\[Zeta].*)
-
     #  (*Steps for phase estimation without amplitude amplification.*)
     m1 = numpy.ceil(numpy.pi * lam_1 / (2 * eps_ph)) 
     m2 = numpy.ceil(numpy.pi * lam_2 / (2 * eps_ph)) 
     
-
     # (*Steps for phase estimation with amplitude amplification.*)
 
     # (*The number of bits used for the equal state preparation for \
@@ -1007,8 +1009,12 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
                                       lambda_amp=lam_2,
                                       lambda_noamp=lam_1,
                                       lambda_T=lam_T,
-                                      lambda_U=lam_U + lam_Un,
-                                      lambda_V=lam_V+ lam_Vn,
+                                      lambda_Tn=lam_T_nuc,
+                                      lambda_Tkmean=lam_T_kmean,
+                                      lambda_U=lam_U,
+                                      lambda_Un=lam_Un,
+                                      lambda_V=lam_V,
+                                      lambda_Vn=lam_Vn,
                                       qpe_multiplier_m1=m1,
                                       qpe_multiplier_m2=m2,
                                       tofc_inequality_c1=c1,
@@ -1035,7 +1041,7 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
                                       qc_prep_wrs_q12=q12,
                                       qc_momenta_update_q13=q13,
                                       qc_momenta_addition_overflow_q14=q14,
-                                      qc_arithmetic_phasing_nuclei_R_q15=15
+                                      qc_arithmetic_phasing_nuclei_R_q15=q15
     )
 
     # return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
@@ -1106,20 +1112,6 @@ if __name__ == "__main__":
     print("nbr = ", 20)
     print("L = ", num_nuclei)
     print("zeta = ", 2)
-    # # final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph = \
-    # qpe_cost, num_logical_qubits = \
-    # pw_qubitization_with_projectile_costs(np=num_bits_momenta, 
-    #                                       eta=num_elec, 
-    #                                       Omega=volume_bohr, 
-    #                                       eps=eps_total, 
-    #                                       nMc=num_bits_nu,
-    #                                       nbr=20, 
-    #                                       L=num_nuclei, 
-    #                                       zeta=2,
-    #                                       phase_estimation_costs=True)
-    # print("qpe_cost = {: 1.5e}".format(qpe_cost))
-    # # assert "{:1.5e}".format(qpe_cost) == '6.29052e+13'
-    # print("logical Qubit Cost ", num_logical_qubits)
 
     qpe_cost, num_logical_qubits = \
     pw_qubitization_with_projectile_costs_from_v5(np=num_bits_momenta, 
@@ -1135,5 +1127,4 @@ if __name__ == "__main__":
                                                   kmean=7000,
                                                   phase_estimation_costs=True)
     print("qpe_cost = {: 1.5e}".format(qpe_cost))
-    # assert "{:1.5e}".format(qpe_cost) == '6.29494e+13'
     print("logical Qubit Cost ", num_logical_qubits)

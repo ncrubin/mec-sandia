@@ -45,7 +45,7 @@ def block_encoding_costs():
     projectile_ke = 0.5 * projectile_mass * projectile_velocity**2
     projectile_wavenumber_au = np.sqrt(2 * projectile_ke / projectile_mass) * projectile_mass # p = m * v
     
-    blockencodingtoff, lambdaval, qubit, cost_dataclass = pw_qubitization_with_projectile_costs_from_v5(
+    blockencodingtoff, lambdaval, qubit, cost_dataclass_He = pw_qubitization_with_projectile_costs_from_v5(
         np=num_bits_momenta, 
         nn=num_bits_momenta + 2,
         eta=num_elec, 
@@ -62,20 +62,20 @@ def block_encoding_costs():
     )
     print(f"Block encdoing costs: Toffolis = {blockencodingtoff:4.3e}, lambda = {lambdaval:f} qubits = {qubit}")
 
-    print("tofc_inequality_c1",                      cost_dataclass.tofc_inequality_c1)
-    print("tofc_superposition_ij_c2",                cost_dataclass.tofc_superposition_ij_c2)
-    print("tofc_superposition_wrs_c3",               cost_dataclass.tofc_superposition_wrs_c3)
-    print("tofc_controlled_swaps_c4",                cost_dataclass.tofc_controlled_swaps_c4)
-    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass.tofc_extra_nuclear_momentum_c5)
-    print("tofc_nested_boxes_c6",                    cost_dataclass.tofc_nested_boxes_c6)
-    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass.tofc_prep_unprep_nuclear_via_qrom_c7)
-    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass.tofc_add_subtract_momentum_for_select_c8)
-    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass.tofc_phasing_by_structure_factor_c9)
-    print("tofc_reflection_costs_cr",                cost_dataclass.tofc_reflection_costs_cr)
+    print("tofc_inequality_c1",                      cost_dataclass_He.tofc_inequality_c1)
+    print("tofc_superposition_ij_c2",                cost_dataclass_He.tofc_superposition_ij_c2)
+    print("tofc_superposition_wrs_c3",               cost_dataclass_He.tofc_superposition_wrs_c3)
+    print("tofc_controlled_swaps_c4",                cost_dataclass_He.tofc_controlled_swaps_c4)
+    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass_He.tofc_extra_nuclear_momentum_c5)
+    print("tofc_nested_boxes_c6",                    cost_dataclass_He.tofc_nested_boxes_c6)
+    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass_He.tofc_prep_unprep_nuclear_via_qrom_c7)
+    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass_He.tofc_add_subtract_momentum_for_select_c8)
+    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass_He.tofc_phasing_by_structure_factor_c9)
+    print("tofc_reflection_costs_cr",                cost_dataclass_He.tofc_reflection_costs_cr)
 
     print()
     print()
-    for key, val in vars(cost_dataclass).items():
+    for key, val in vars(cost_dataclass_He).items():
         if 'lambda' in key:
             if 'lambda_T' == key:
                 print(key,"\t", "{:10.10f}".format(val), ((6 * num_elec * np.pi**2) / volume_bohr**(2/3)) * (4**(num_bits_momenta - 1)))
@@ -121,7 +121,7 @@ def block_encoding_costs():
     projectile_ke = 0.5 * projectile_mass * projectile_velocity**2
     projectile_wavenumber_au = np.sqrt(2 * projectile_ke / projectile_mass) * projectile_mass # p = m * v
     
-    blockencodingtoff, lambdaval, qubit, cost_dataclass = pw_qubitization_with_projectile_costs_from_v5(
+    blockencodingtoff, lambdaval, qubit, cost_dataclass_hd = pw_qubitization_with_projectile_costs_from_v5(
         np=num_bits_momenta, 
         nn=num_bits_momenta + 2,
         eta=num_elec, 
@@ -138,20 +138,20 @@ def block_encoding_costs():
     )
     print(f"Block encdoing costs: Toffolis = {blockencodingtoff:4.3e}, lambda = {lambdaval:f} qubits = {qubit}")
 
-    print("tofc_inequality_c1",                      cost_dataclass.tofc_inequality_c1)
-    print("tofc_superposition_ij_c2",                cost_dataclass.tofc_superposition_ij_c2)
-    print("tofc_superposition_wrs_c3",               cost_dataclass.tofc_superposition_wrs_c3)
-    print("tofc_controlled_swaps_c4",                cost_dataclass.tofc_controlled_swaps_c4)
-    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass.tofc_extra_nuclear_momentum_c5)
-    print("tofc_nested_boxes_c6",                    cost_dataclass.tofc_nested_boxes_c6)
-    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass.tofc_prep_unprep_nuclear_via_qrom_c7)
-    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass.tofc_add_subtract_momentum_for_select_c8)
-    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass.tofc_phasing_by_structure_factor_c9)
-    print("tofc_reflection_costs_cr",                cost_dataclass.tofc_reflection_costs_cr)
+    print("tofc_inequality_c1",                      cost_dataclass_hd.tofc_inequality_c1)
+    print("tofc_superposition_ij_c2",                cost_dataclass_hd.tofc_superposition_ij_c2)
+    print("tofc_superposition_wrs_c3",               cost_dataclass_hd.tofc_superposition_wrs_c3)
+    print("tofc_controlled_swaps_c4",                cost_dataclass_hd.tofc_controlled_swaps_c4)
+    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass_hd.tofc_extra_nuclear_momentum_c5)
+    print("tofc_nested_boxes_c6",                    cost_dataclass_hd.tofc_nested_boxes_c6)
+    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass_hd.tofc_prep_unprep_nuclear_via_qrom_c7)
+    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass_hd.tofc_add_subtract_momentum_for_select_c8)
+    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass_hd.tofc_phasing_by_structure_factor_c9)
+    print("tofc_reflection_costs_cr",                cost_dataclass_hd.tofc_reflection_costs_cr)
 
     print()
     print()
-    for key, val in vars(cost_dataclass).items():
+    for key, val in vars(cost_dataclass_hd).items():
         if 'lambda' in key:
             if 'lambda_T' == key:
                 print(key,"\t", "{:10.10f}".format(val), ((6 * num_elec * np.pi**2) / volume_bohr**(2/3)) * (4**(num_bits_momenta - 1)))
@@ -199,7 +199,7 @@ def block_encoding_costs():
     projectile_ke = 0.5 * projectile_mass * projectile_velocity**2
     projectile_wavenumber_au = np.sqrt(2 * projectile_ke / projectile_mass) * projectile_mass # p = m * v
     
-    blockencodingtoff, lambdaval, qubit, cost_dataclass = pw_qubitization_with_projectile_costs_from_v5(
+    blockencodingtoff, lambdaval, qubit, cost_dataclass_C = pw_qubitization_with_projectile_costs_from_v5(
         np=num_bits_momenta, 
         nn=num_bits_momenta + 2,
         eta=num_elec, 
@@ -216,20 +216,20 @@ def block_encoding_costs():
     )
     print(f"Block encdoing costs: Toffolis = {blockencodingtoff:4.3e}, lambda = {lambdaval:f} qubits = {qubit}")
 
-    print("tofc_inequality_c1",                      cost_dataclass.tofc_inequality_c1)
-    print("tofc_superposition_ij_c2",                cost_dataclass.tofc_superposition_ij_c2)
-    print("tofc_superposition_wrs_c3",               cost_dataclass.tofc_superposition_wrs_c3)
-    print("tofc_controlled_swaps_c4",                cost_dataclass.tofc_controlled_swaps_c4)
-    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass.tofc_extra_nuclear_momentum_c5)
-    print("tofc_nested_boxes_c6",                    cost_dataclass.tofc_nested_boxes_c6)
-    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass.tofc_prep_unprep_nuclear_via_qrom_c7)
-    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass.tofc_add_subtract_momentum_for_select_c8)
-    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass.tofc_phasing_by_structure_factor_c9)
-    print("tofc_reflection_costs_cr",                cost_dataclass.tofc_reflection_costs_cr)
+    print("tofc_inequality_c1",                      cost_dataclass_C.tofc_inequality_c1)
+    print("tofc_superposition_ij_c2",                cost_dataclass_C.tofc_superposition_ij_c2)
+    print("tofc_superposition_wrs_c3",               cost_dataclass_C.tofc_superposition_wrs_c3)
+    print("tofc_controlled_swaps_c4",                cost_dataclass_C.tofc_controlled_swaps_c4)
+    print("tofc_extra_nuclear_momentum_c5",          cost_dataclass_C.tofc_extra_nuclear_momentum_c5)
+    print("tofc_nested_boxes_c6",                    cost_dataclass_C.tofc_nested_boxes_c6)
+    print("tofc_prep_unprep_nuclear_via_qrom_c7",    cost_dataclass_C.tofc_prep_unprep_nuclear_via_qrom_c7)
+    print("tofc_add_subtract_momentum_for_select_c8",cost_dataclass_C.tofc_add_subtract_momentum_for_select_c8)
+    print("tofc_phasing_by_structure_factor_c9",     cost_dataclass_C.tofc_phasing_by_structure_factor_c9)
+    print("tofc_reflection_costs_cr",                cost_dataclass_C.tofc_reflection_costs_cr)
 
     print()
     print()
-    for key, val in vars(cost_dataclass).items():
+    for key, val in vars(cost_dataclass_C).items():
         if 'lambda' in key:
             if 'lambda_T' == key:
                 print(key,"\t", "{:10.10f}".format(val), ((6 * num_elec * np.pi**2) / volume_bohr**(2/3)) * (4**(num_bits_momenta - 1)))
@@ -239,6 +239,75 @@ def block_encoding_costs():
                 print(key,"\t", "{:10.10f}".format(val), 6. /projectile_mass * np.pi**2 / volume_bohr**(2/3) * (4**(num_bits_momenta + 2 - 1)))
             else:
                 print(key,"\t", "{:10.10f}".format(val))
+
+    ##### Create DF
+    import pandas as pd
+    df_dict = {"Toffoli Count": [], "System": [], "Subroutine": []}
+    df_dict['Subroutine'] += ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "CR"]
+    df_dict['System'] += ['H-C'] * 10
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_inequality_c1)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_superposition_ij_c2)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_superposition_wrs_c3)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_controlled_swaps_c4)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_extra_nuclear_momentum_c5)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_nested_boxes_c6)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_prep_unprep_nuclear_via_qrom_c7)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_add_subtract_momentum_for_select_c8)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_phasing_by_structure_factor_c9)
+    df_dict['Toffoli Count'].append(cost_dataclass_C.tofc_reflection_costs_cr)
+
+
+    df_dict['Subroutine'] += ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "CR"]
+    df_dict['System'] += ['He-H'] * 10
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_inequality_c1)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_superposition_ij_c2)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_superposition_wrs_c3)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_controlled_swaps_c4)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_extra_nuclear_momentum_c5)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_nested_boxes_c6)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_prep_unprep_nuclear_via_qrom_c7)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_add_subtract_momentum_for_select_c8)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_phasing_by_structure_factor_c9)
+    df_dict['Toffoli Count'].append(cost_dataclass_He.tofc_reflection_costs_cr)
+
+    df_dict['Subroutine'] += ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "CR"]
+    df_dict['System'] += ['H-D'] * 10
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_inequality_c1)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_superposition_ij_c2)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_superposition_wrs_c3)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_controlled_swaps_c4)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_extra_nuclear_momentum_c5)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_nested_boxes_c6)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_prep_unprep_nuclear_via_qrom_c7)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_add_subtract_momentum_for_select_c8)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_phasing_by_structure_factor_c9)
+    df_dict['Toffoli Count'].append(cost_dataclass_hd.tofc_reflection_costs_cr)
+
+
+    df = pd.DataFrame().from_dict(df_dict)
+    
+
+    import seaborn as sns
+    sns.set_context('paper')
+    ax = sns.barplot(x='Subroutine', y='Toffoli Count', hue ='System', data = df,
+                     edgecolor = 'w',
+                     palette=colors[:3]) #[colors[0], colors[2], colors[3]]) # palette = 'Blues',
+    ax.set_yscale("log")
+    ax.tick_params(which='both', labelsize=14, direction='in')
+    ax.set_xlabel("Subroutine", fontsize=14)
+    ax.set_ylabel(r"Toffolis", fontsize=14)
+    ax.legend(loc='upper right', fontsize=14, ncol=1, frameon=False)
+
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    ax.set_xticklabels(labels, rotation=90)
+
+    plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
+    plt.savefig("seaborn_plt.png", format='PNG', dpi=300)
+    plt.savefig("Subroutine_Costs.png", format='PNG', dpi=300)
+    plt.savefig("Subroutine_Costs.pdf", format='PDF', dpi=300)
+    plt.show()
+
+ 
 
 if __name__ == "__main__":
     block_encoding_costs()
