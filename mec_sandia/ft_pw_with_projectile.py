@@ -1,3 +1,4 @@
+from attr import frozen
 from dataclasses import dataclass
 import numpy
 from math import factorial
@@ -714,8 +715,21 @@ def pw_qubitization_with_projectile_costs_from_v4(np, nn, eta, Omega, eps, nMc, 
             return cqaa / m2, lam_2, int(qt) - int(q2)
 
 
-@dataclass
-class ToffoliCostBReakdown:
+@frozen
+class ToffoliCostBreakdown:
+    """Input parameters"""
+    np: int
+    nn: int
+    eta: int
+    Omega: float
+    eps: float
+    nMc: int
+    nbr: int
+    L: int
+    zeta: int
+    mpr: int
+    kmean: float
+
     """Breakdown of Toffoli costs"""
     target_qpe_eps: float
     lambda_amp: float
@@ -729,6 +743,7 @@ class ToffoliCostBReakdown:
     lambda_Vn: float
     qpe_multiplier_m1: float
     qpe_multiplier_m2: float
+    lambda_total: float
     
     # toffoli costs
     tofc_inequality_c1: int
@@ -741,6 +756,7 @@ class ToffoliCostBReakdown:
     tofc_add_subtract_momentum_for_select_c8: int
     tofc_phasing_by_structure_factor_c9: int
     tofc_reflection_costs_cr: int
+    tofc_total: int
 
     # qubit costs
     qc_system_qubits_q1: int
@@ -758,6 +774,7 @@ class ToffoliCostBReakdown:
     qc_momenta_update_q13: int
     qc_momenta_addition_overflow_q14: int
     qc_arithmetic_phasing_nuclei_R_q15: int
+    qc_total: int
 
 
 
@@ -1005,43 +1022,66 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
     q15 = 2*(nR - 2) 
     qt = q1 + q2 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14 + q15
 
-    toff_costs = ToffoliCostBReakdown(target_qpe_eps=eps,
-                                      lambda_amp=lam_2,
-                                      lambda_noamp=lam_1,
-                                      lambda_T=lam_T,
-                                      lambda_Tn=lam_T_nuc,
-                                      lambda_Tkmean=lam_T_kmean,
-                                      lambda_U=lam_U,
-                                      lambda_Un=lam_Un,
-                                      lambda_V=lam_V,
-                                      lambda_Vn=lam_Vn,
-                                      qpe_multiplier_m1=m1,
-                                      qpe_multiplier_m2=m2,
-                                      tofc_inequality_c1=c1,
-                                      tofc_superposition_ij_c2=c2,
-                                      tofc_superposition_wrs_c3=c3,
-                                      tofc_controlled_swaps_c4=c4,
-                                      tofc_extra_nuclear_momentum_c5=c5,
-                                      tofc_nested_boxes_c6=c6,
-                                      tofc_prep_unprep_nuclear_via_qrom_c7=c7,
-                                      tofc_add_subtract_momentum_for_select_c8=c8,
-                                      tofc_phasing_by_structure_factor_c9=c9,
-                                      tofc_reflection_costs_cr=cr,
-                                      qc_system_qubits_q1=q1,
-                                      qc_qpe_qubits_q2=q2,
-                                      qc_bits_for_nuclei_rotations_q3=q3,
-                                      qc_t_state_q4=q4,
-                                      qc_bit_for_T_or_UV_q5=q5,
-                                      qc_cost_for_nuclei_prep_q6=q6,
-                                      qc_extra_toffoli_q7=q7,
-                                      qc_superposition_ij_q8=q8,
-                                      qc_qubits_for_nu_prep_q9=q9,
-                                      qc_nuclear_positions_q10=q10,
-                                      qc_prep_w_alone_q11=q11,
-                                      qc_prep_wrs_q12=q12,
-                                      qc_momenta_update_q13=q13,
-                                      qc_momenta_addition_overflow_q14=q14,
-                                      qc_arithmetic_phasing_nuclei_R_q15=q15
+    if cq < cqaa:
+        tofc_total = cq / m1
+        lambda_total = lam_1
+    else:
+        tofc_total = cqaa / m2
+        lambda_total = lam_2
+    qc_total = int(qt) - int(q2)
+
+    toff_costs = ToffoliCostBreakdown(
+        np=np,
+        nn=nn,
+        eta=eta,
+        Omega=Omega,
+        eps=eps,
+        nMc=nMc,
+        nbr=nbr,
+        L=L,
+        zeta=zeta,
+        mpr=mpr,
+        kmean=kmean,
+        target_qpe_eps=eps,
+        lambda_amp=lam_2,
+        lambda_noamp=lam_1,
+        lambda_T=lam_T,
+        lambda_Tn=lam_T_nuc,
+        lambda_Tkmean=lam_T_kmean,
+        lambda_U=lam_U,
+        lambda_Un=lam_Un,
+        lambda_V=lam_V,
+        lambda_Vn=lam_Vn,
+        qpe_multiplier_m1=m1,
+        qpe_multiplier_m2=m2,
+        lambda_total=lambda_total,
+        tofc_inequality_c1=c1,
+        tofc_superposition_ij_c2=c2,
+        tofc_superposition_wrs_c3=c3,
+        tofc_controlled_swaps_c4=c4,
+        tofc_extra_nuclear_momentum_c5=c5,
+        tofc_nested_boxes_c6=c6,
+        tofc_prep_unprep_nuclear_via_qrom_c7=c7,
+        tofc_add_subtract_momentum_for_select_c8=c8,
+        tofc_phasing_by_structure_factor_c9=c9,
+        tofc_reflection_costs_cr=cr,
+        tofc_total = tofc_total,
+        qc_system_qubits_q1=q1,
+        qc_qpe_qubits_q2=q2,
+        qc_bits_for_nuclei_rotations_q3=q3,
+        qc_t_state_q4=q4,
+        qc_bit_for_T_or_UV_q5=q5,
+        qc_cost_for_nuclei_prep_q6=q6,
+        qc_extra_toffoli_q7=q7,
+        qc_superposition_ij_q8=q8,
+        qc_qubits_for_nu_prep_q9=q9,
+        qc_nuclear_positions_q10=q10,
+        qc_prep_w_alone_q11=q11,
+        qc_prep_wrs_q12=q12,
+        qc_momenta_update_q13=q13,
+        qc_momenta_addition_overflow_q14=q14,
+        qc_arithmetic_phasing_nuclei_R_q15=q15,
+        qc_total=qc_total
     )
 
     # return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
