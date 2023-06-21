@@ -288,10 +288,13 @@ def estimate_kinetic_energy_sampling(
     kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1)
     if shift_by_constant:
         kinetic_samples -= 0.5 * np.dot(kproj, kproj)
-    return (
-        np.mean(kinetic_samples),
-        np.std(kinetic_samples, ddof=1) / num_samples**0.5,
-    )
+    if num_samples == 1:
+        return kinetic_samples[0], 0.0
+    else:
+        return (
+            np.mean(kinetic_samples),
+            np.std(kinetic_samples, ddof=1) / num_samples**0.5,
+        )
 
 
 def estimate_kinetic_energy_importance_sampling(

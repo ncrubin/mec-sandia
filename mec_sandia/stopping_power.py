@@ -124,7 +124,10 @@ def parse_stopping_data(
         keep = np.arange(len(time_au))
     # TODO: Replace this with Alina's sampling!
     time_keep = time_au[keep]
-    max_time_indx = np.where(time_keep < max_time)[0][-1] + 1
+    if max_time > 0:
+        max_time_indx = np.where(time_keep < max_time)[0][-1] + 1
+    else:
+        max_time_indx = -1
     time_keep = time_keep[:max_time_indx]
     if random_sub_sample:
         sub_sample = np.random.choice(np.arange(len(time_keep[keep])), num_points)
@@ -184,9 +187,16 @@ def compute_stopping_power(
     velocity_vals = kproj_vals[:, 0] / mass_proj
     distance = time_vals * velocity_vals
     # pylint: disable=unbalanced-tuple-unpacking
-    popt, pcov = scipy.optimize.curve_fit(
-        _fit_linear, distance, yvals, sigma=errs, absolute_sigma=True
-    )
+    if num_samples > 1:
+        popt, pcov = scipy.optimize.curve_fit(
+            _fit_linear, distance, yvals, sigma=errs, absolute_sigma=True,
+        )
+    else:
+        popt, pcov = scipy.optimize.curve_fit(
+            _fit_linear,
+            distance,
+            yvals,
+        )
     slope, incpt = popt
     slope_err = np.sqrt(pcov[0, 0])
     yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (2 * mass_proj)
