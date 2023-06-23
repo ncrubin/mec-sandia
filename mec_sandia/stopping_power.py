@@ -189,7 +189,11 @@ def compute_stopping_power(
     # pylint: disable=unbalanced-tuple-unpacking
     if num_samples > 1:
         popt, pcov = scipy.optimize.curve_fit(
-            _fit_linear, distance, yvals, sigma=errs, absolute_sigma=True,
+            _fit_linear,
+            distance,
+            yvals,
+            sigma=errs,
+            absolute_sigma=True,
         )
     else:
         popt, pcov = scipy.optimize.curve_fit(
@@ -199,9 +203,11 @@ def compute_stopping_power(
         )
     slope, incpt = popt
     slope_err = np.sqrt(pcov[0, 0])
-    yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (2 * mass_proj)
+    expected_yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (
+        2 * mass_proj
+    )
     xvals = distance
-    expected_val = compute_stopping_exact(xvals, yvals)
+    expected_val = compute_stopping_exact(xvals, expected_yvals)
     data = StoppingPowerData(
         stopping=slope,
         stopping_err=slope_err,

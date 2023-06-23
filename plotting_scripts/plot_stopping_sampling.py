@@ -74,7 +74,7 @@ def plot_figures(read_from_file=False):
 
     # subsample involves randomly sampling the input
     np.random.seed(7)
-    for isamp, num_samples in enumerate([10, 100, 500, 1000]):
+    for isamp, num_samples in enumerate([10, 100, 1000]):
         sim_res = []
         act_res = []
         for vel in velocity_au:
@@ -82,8 +82,7 @@ def plot_figures(read_from_file=False):
                 f"../notebooks/AndrewsFirstGaussian/{vel}_work_vs_dist",
                 vel,
                 mass_proj=mass_proj,
-                num_points=5,
-                max_time=39.0,
+                num_points=10,
                 rare_event=0.25,
                 random_sub_sample=False,
             )
@@ -137,7 +136,8 @@ def plot_figures(read_from_file=False):
     # Plot ns = 10_000
     plt.cla()
     # plt.plot(velocity_au, act_res, label="expected", lw=0, marker="D", color=colors[0])
-    for isamp, num_samples in enumerate([1_000, 10_000, 50_000]):
+    # for isamp, num_samples in enumerate([1_000, 10_000, 50_000]):
+    for isamp, num_samples in enumerate([10, 100, 1000]):
         vals = [abs(s.stopping) for s in all_sims[isamp]]
         errs = [s.stopping_err for s in all_sims[isamp]]
         plt.errorbar(
@@ -151,8 +151,9 @@ def plot_figures(read_from_file=False):
         )
     xs = np.linspace(velocity_au[0], velocity_au[-1], 100)
     plt.plot(xs, stopping_spl(xs), color=colors[3], label="DFT Data")
-    plt.plot(xs, stopping_spl(xs) + 0.01, color=colors[3], label="DFT Data")
-    plt.plot(xs, stopping_spl(xs) - 0.01, color=colors[3], alpha=0.2)
+    plt.plot(xs, stopping_spl(xs) + 0.01, color=colors[3], alpha=0.1)
+    plt.plot(xs, stopping_spl(xs) - 0.01, color=colors[3], alpha=0.1)
+    plt.fill_between(xs, stopping_spl(xs) - 0.01, stopping_spl(xs) + 0.01, alpha=0.1)
     plt.legend(fontsize=10, ncol=1, frameon=False)
     plt.xlabel("Velocity [au]", fontsize=14)
     plt.ylabel("Stopping Power [au]", fontsize=14)

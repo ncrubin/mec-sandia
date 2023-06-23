@@ -5,3 +5,5 @@ pytest
 sympy
 matplotlib
 black
+mypy
+pyscf

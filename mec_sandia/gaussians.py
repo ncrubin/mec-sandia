@@ -290,11 +290,10 @@ def estimate_kinetic_energy_sampling(
         kinetic_samples -= 0.5 * np.dot(kproj, kproj)
     if num_samples == 1:
         return kinetic_samples[0], 0.0
-    else:
-        return (
-            np.mean(kinetic_samples),
-            np.std(kinetic_samples, ddof=1) / num_samples**0.5,
-        )
+    return (
+        np.mean(kinetic_samples),
+        np.std(kinetic_samples, ddof=1) / num_samples**0.5,
+    )
 
 
 def estimate_kinetic_energy_importance_sampling(
@@ -345,3 +344,8 @@ def estimate_kinetic_energy_importance_sampling(
         np.mean(kinetic_samples),
         np.std(kinetic_samples, ddof=1) / num_samples**0.5,
     )
+
+
+def kinetic_variance_exact(mean, sigma) -> float:
+    """Var[k^2] assuming 3D Gaussian PDF"""
+    return 4 * mean * sigma**2 + 6 * sigma**4
