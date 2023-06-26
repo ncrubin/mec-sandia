@@ -74,7 +74,8 @@ def plot_figures(read_from_file=False):
 
     # subsample involves randomly sampling the input
     np.random.seed(7)
-    for isamp, num_samples in enumerate([10, 100, 1000]):
+    samples = [50, 100, 1000]
+    for isamp, num_samples in enumerate(samples):
         sim_res = []
         act_res = []
         for vel in velocity_au:
@@ -92,11 +93,11 @@ def plot_figures(read_from_file=False):
             )
             if read_from_file:
                 filename = f"{outdir}/stopping_sampling_{vel}_{num_samples}.json"
-                print(f"Reading stopping data from {filename}.")
+                # print(f"Reading stopping data from {filename}.")
                 stopping_data = StoppingPowerData.from_file(filename)
             else:
-                print("Generating stopping data from scratch.")
-                print(f"vel = {vel}, ns = {num_samples}")
+                # print("Generating stopping data from scratch.")
+                # print(f"vel = {vel}, ns = {num_samples}")
                 stopping_data = compute_stopping_power(
                     ecut_ha,
                     box_length,
@@ -120,26 +121,28 @@ def plot_figures(read_from_file=False):
             fmt="o",
             color=colors[isamp],
             label=r"$N_s$ = {:d}".format(num_samples),
+            capsize=2,
         )
         all_sims.append(sim_res)
     plt.legend(loc="lower left", fontsize=10, ncol=1, frameon=False)
-    plt.axhline(stopping_err_au, color="grey", alpha=0.5)
-    plt.axhline(-stopping_err_au, color="grey", alpha=0.5)
-    plt.ylim([-10 * stopping_err_au, 10 * stopping_err_au])
+    plt.axhline(stopping_err_au, color="grey", alpha=0.5, ls=":")
+    plt.axhline(-stopping_err_au, color="grey", alpha=0.5, ls=":")
+    plt.axhline(5 * stopping_err_au, color="grey", alpha=0.5, ls=":")
+    plt.axhline(-5 * stopping_err_au, color="grey", alpha=0.5, ls=":")
+    plt.ylim([-0.04, 0.04])
     plt.tick_params(which="both", labelsize=14, direction="in")
     plt.xlabel("initial veloctiy [au]", fontsize=14)
     plt.ylabel("Stopping Power error [au]", fontsize=14)
-    plt.savefig(
-        "figures/stopping/stopping_power_conv.pdf", bbox_inches="tight", dpi=300
-    )
+    plt.savefig(f"{outdir}/stopping_power_conv.pdf", bbox_inches="tight", dpi=300)
 
     # Plot ns = 10_000
     plt.cla()
     # plt.plot(velocity_au, act_res, label="expected", lw=0, marker="D", color=colors[0])
     # for isamp, num_samples in enumerate([1_000, 10_000, 50_000]):
-    for isamp, num_samples in enumerate([10, 100, 1000]):
+    for isamp, num_samples in enumerate(samples):
         vals = [abs(s.stopping) for s in all_sims[isamp]]
         errs = [s.stopping_err for s in all_sims[isamp]]
+        print(isamp)
         plt.errorbar(
             velocity_au,
             vals,
@@ -148,19 +151,18 @@ def plot_figures(read_from_file=False):
             label=f"$N_s$ = {num_samples}",
             color=colors[isamp],
             markerfacecolor="None",
+            capsize=2,
         )
     xs = np.linspace(velocity_au[0], velocity_au[-1], 100)
     plt.plot(xs, stopping_spl(xs), color=colors[3], label="DFT Data")
     plt.plot(xs, stopping_spl(xs) + 0.01, color=colors[3], alpha=0.1)
     plt.plot(xs, stopping_spl(xs) - 0.01, color=colors[3], alpha=0.1)
-    plt.fill_between(xs, stopping_spl(xs) - 0.01, stopping_spl(xs) + 0.01, alpha=0.1)
+    plt.fill_between(xs, stopping_spl(xs) - 0.01, stopping_spl(xs) + 0.01, alpha=0.2)
     plt.legend(fontsize=10, ncol=1, frameon=False)
     plt.xlabel("Velocity [au]", fontsize=14)
     plt.ylabel("Stopping Power [au]", fontsize=14)
     plt.tick_params(which="both", labelsize=14, direction="in")
-    plt.savefig(
-        "figures/stopping/stopping_power_comparison.pdf", bbox_inches="tight", dpi=300
-    )
+    plt.savefig(f"{outdir}/stopping_power_comparison.pdf", bbox_inches="tight", dpi=300)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,15 @@ def _fit_linear(x, a, b):
     return a * x + b
 
 
+def bootstrap(xs, ys, errs, nsamp=100) -> Tuple[float, float]:
+    slopes = []
+    for _ in range(nsamp):
+        y_err = np.array([y + np.random.normal(0, scale=e) for (y, e) in zip(ys, errs)])
+        popt, pcov = scipy.optimize.curve_fit(_fit_linear, xs, y_err)
+        slopes.append(popt[0])
+    return np.mean(slopes), np.std(slopes, ddof=1)
+
+
 class NumpyEncoder(json.JSONEncoder):
     """Special json encoder for numpy types"""
 
@@ -43,6 +52,7 @@ class StoppingPowerData:
     time_vals: np.ndarray
     distance: np.ndarray
     sigma_vals: np.ndarray
+    kinetic_expected: np.ndarray
     stopping_expected: float
 
     def linear_fit(self, xs):
@@ -219,6 +229,7 @@ def compute_stopping_power(
         time_vals=time_vals,
         distance=distance,
         sigma_vals=sigma_tvals,
+        kinetic_expected=yvals,
         stopping_expected=expected_val,
     )
     return data

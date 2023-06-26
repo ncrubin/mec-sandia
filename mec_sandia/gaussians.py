@@ -7,6 +7,11 @@ import scipy.optimize
 from pyscf.lib.numpy_helper import cartesian_prod
 
 
+def bootstrap(xs, ys, errs, nsamp=100):
+    for _ in nsamp:
+        y_err = np.array([y + np.random.normal(0, scale=e) for (y, e) in zip(ys, errs)])
+
+
 def estimate_error_kinetic_energy(
     kcut: float,
     sigma: float,
