@@ -7,6 +7,11 @@ import scipy.optimize
 from pyscf.lib.numpy_helper import cartesian_prod
 
 
+def bootstrap(xs, ys, errs, nsamp=100):
+    for _ in nsamp:
+        y_err = np.array([y + np.random.normal(0, scale=e) for (y, e) in zip(ys, errs)])
+
+
 def estimate_error_kinetic_energy(
     kcut: float,
     sigma: float,
@@ -288,6 +293,8 @@ def estimate_kinetic_energy_sampling(
     kinetic_samples = 0.5 * np.sum((k_select + kproj[None, :]) ** 2.0, axis=-1)
     if shift_by_constant:
         kinetic_samples -= 0.5 * np.dot(kproj, kproj)
+    if num_samples == 1:
+        return kinetic_samples[0], 0.0
     return (
         np.mean(kinetic_samples),
         np.std(kinetic_samples, ddof=1) / num_samples**0.5,
@@ -342,3 +349,8 @@ def estimate_kinetic_energy_importance_sampling(
         np.mean(kinetic_samples),
         np.std(kinetic_samples, ddof=1) / num_samples**0.5,
     )
+
+
+def kinetic_variance_exact(mean, sigma) -> float:
+    """Var[k^2] assuming 3D Gaussian PDF"""
+    return 4 * mean * sigma**2 + 6 * sigma**4

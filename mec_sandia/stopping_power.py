@@ -18,6 +18,15 @@ def _fit_linear(x, a, b):
     return a * x + b
 
 
+def bootstrap(xs, ys, errs, nsamp=100) -> Tuple[float, float]:
+    slopes = []
+    for _ in range(nsamp):
+        y_err = np.array([y + np.random.normal(0, scale=e) for (y, e) in zip(ys, errs)])
+        popt, pcov = scipy.optimize.curve_fit(_fit_linear, xs, y_err)
+        slopes.append(popt[0])
+    return np.mean(slopes), np.std(slopes, ddof=1)
+
+
 class NumpyEncoder(json.JSONEncoder):
     """Special json encoder for numpy types"""
 
@@ -43,6 +52,7 @@ class StoppingPowerData:
     time_vals: np.ndarray
     distance: np.ndarray
     sigma_vals: np.ndarray
+    kinetic_expected: np.ndarray
     stopping_expected: float
 
     def linear_fit(self, xs):
@@ -124,7 +134,10 @@ def parse_stopping_data(
         keep = np.arange(len(time_au))
     # TODO: Replace this with Alina's sampling!
     time_keep = time_au[keep]
-    max_time_indx = np.where(time_keep < max_time)[0][-1] + 1
+    if max_time > 0:
+        max_time_indx = np.where(time_keep < max_time)[0][-1] + 1
+    else:
+        max_time_indx = -1
     time_keep = time_keep[:max_time_indx]
     if random_sub_sample:
         sub_sample = np.random.choice(np.arange(len(time_keep[keep])), num_points)
@@ -184,14 +197,27 @@ def compute_stopping_power(
     velocity_vals = kproj_vals[:, 0] / mass_proj
     distance = time_vals * velocity_vals
     # pylint: disable=unbalanced-tuple-unpacking
-    popt, pcov = scipy.optimize.curve_fit(
-        _fit_linear, distance, yvals, sigma=errs, absolute_sigma=True
-    )
+    if num_samples > 1:
+        popt, pcov = scipy.optimize.curve_fit(
+            _fit_linear,
+            distance,
+            yvals,
+            sigma=errs,
+            absolute_sigma=True,
+        )
+    else:
+        popt, pcov = scipy.optimize.curve_fit(
+            _fit_linear,
+            distance,
+            yvals,
+        )
     slope, incpt = popt
     slope_err = np.sqrt(pcov[0, 0])
-    yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (2 * mass_proj)
+    expected_yvals = (np.sum(kproj_vals**2.0, axis=-1) + sigma_tvals**2.0) / (
+        2 * mass_proj
+    )
     xvals = distance
-    expected_val = compute_stopping_exact(xvals, yvals)
+    expected_val = compute_stopping_exact(xvals, expected_yvals)
     data = StoppingPowerData(
         stopping=slope,
         stopping_err=slope_err,
@@ -203,6 +229,7 @@ def compute_stopping_power(
         time_vals=time_vals,
         distance=distance,
         sigma_vals=sigma_tvals,
+        kinetic_expected=yvals,
         stopping_expected=expected_val,
     )
     return data
