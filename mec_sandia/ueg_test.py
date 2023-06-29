@@ -16,7 +16,6 @@ def test_eris():
     assert ueg.nbasis == 19
     eris_4 = ueg.eri_4()
     assert eris_4.shape == (19,) * 4
-    # ERIS are stored like (ij|kl)
     for i, j, k, l in itertools.product(range(ueg.nbasis), repeat=4):
         # momentum conservation
         q1 = ueg.basis[k] - ueg.basis[i]
