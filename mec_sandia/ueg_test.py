@@ -1,6 +1,7 @@
 import itertools
 
 import numpy as np
+from pyscf import fci, gto, scf
 
 from mec_sandia.ueg import UEG, UEGTMP
 
@@ -36,5 +37,17 @@ def test_eris():
     e2b -= np.einsum("pqqp->", eris_4[:7, :7, :7, :7])
     etot = e1b + e2b
     assert np.isclose(etot, 13.60355734)  # HF energy from HANDE
-    # Other reference point:
-    #
+    # Other reference point
+    ueg_nel4 = UEGTMP(nelec=(2, 2), rs=2.0, ecut=1)
+    h1e = np.diag(ueg_nel4.sp_eigv)
+    eris = ueg_nel4.eri_8()
+    mol = gto.M()
+    mol.nelectron = ueg_nel4.nelec
+    nbasis = h1e.shape[0]
+    mf = scf.RHF(mol)
+    mf.get_hcore = lambda *args: h1e
+    mf.get_ovlp = lambda *args: np.eye(nbasis)
+    mf._eri = eris
+    mf.kernel()
+    cisolver = fci.FCI(mf)
+    assert np.isclose(cisolver.kernel()[0], 1.285524498812)
