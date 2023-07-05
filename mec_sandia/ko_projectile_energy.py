@@ -86,9 +86,6 @@ class ProjectileKineticEnergyEncoder(SelectOracle):
         nf = 2 * nmean - 1
         return cq.Registers.build(t=nf)
 
-    # def decompose_from_registers(self, *args, **kwargs) -> None:
-    #     yield None
-
     def get_nmean(self) -> int:
         r"""Compute the num-bits needed to represent the k_mean value"""
         integer_kmean = np.ceil(self.block_encoding_costs.kmean / (self.block_encoding_costs.Omega**1/3) / (2 * np.pi))
@@ -118,9 +115,6 @@ def construct_mean_estimation_operator(block_encoding_costs: ToffoliCostBreakdow
     code = CodeForRandomVariable(synthesizer=synthesizer, encoder=encoder)
     mean_op = MeanEstimationOperator(code, arctan_bitsize=arctan_bitsize)
 
-    # print(cq.t_complexity(synthesizer))
-    # print(cq.t_complexity(encoder))
-    # print(cq.t_complexity(mean_op))
     return mean_op
 
 
@@ -153,20 +147,40 @@ def phase_estimation_for_mean_estimation(mean_estimation_op: MeanEstimationOpera
     
     Args:
         mean_estimation_op: KO algorithm unitary
-        mean_eps: decisired precision
+        mean_eps: desired precision for estimation
     """
     qpe_eps = mean_eps / 6
     m = int(np.ceil(np.log2(2 * np.pi / qpe_eps)))
+    print(f"{m=}")
+    print(f"{2**m=}")
     mean_op_regs = mean_estimation_op.registers.get_named_qubits()
 
     m_qubits = [cirq.q(f'm_{i}') for i in range(m)]
-    # state_prep = cirq.StatePreparationChannel(get_resource_state(m), name='𝜒_m')
-
-    # yield state_prep.on(*m_qubits)
+    state_prep = cirq.Circuit([cirq.H.on(qq) for qq in m_qubits])
+    yield state_prep
     for i in range(m):
         for jj in range(2**i):
             yield mean_estimation_op.on_registers(**mean_op_regs, control=m_qubits[i])
     yield cirq.qft(*m_qubits, inverse=True)
+
+def hadamard_test_form_mean_estimation(mean_estimation_op: MeanEstimationOperator, mean_eps: float) -> cirq.OP_TREE:
+    """Hadamard test form of the mean-estimation circuit.
+
+        The method yields an OPTREE to construct the Hadamard test where the unitary is the KO algorithm 
+        unitary raised to T = floor(pi/(3eps))
+
+        Args:
+            mean_estimation_op: KO algorithm unitary
+            mean_eps: desired precision for estimation 
+    """
+    power_for_ko_unitary = int(np.floor(np.pi/(3 * mean_eps)))
+    print(f"{power_for_ko_unitary=}")
+    mean_op_regs = mean_estimation_op.registers.get_named_qubits()
+    ancilla_bit = [cirq.q(f'm_{i}') for i in range(1)]
+    yield cirq.H.on(ancilla_bit[0])
+    for jj in range(power_for_ko_unitary):
+        yield mean_estimation_op.on_registers(**mean_op_regs, control=ancilla_bit[0])
+    yield cirq.H.on(ancilla_bit[0])
 
 
 if __name__ == "__main__":
@@ -194,26 +208,81 @@ if __name__ == "__main__":
     eps_total = 1e-3 # Total allowable error
     num_bits_nu = 8 # extra bits for nu 
 
-    _, _, _, tofc_breakdown = \
-    pw_qubitization_with_projectile_costs_from_v5(np=num_bits_momenta, 
-                                                  nn=num_bits_momenta,
-                                                  eta=num_elec, 
-                                                  Omega=volume_bohr, 
-                                                  eps=eps_total, 
-                                                  nMc=num_bits_nu,
-                                                  nbr=20, 
-                                                  L=num_nuclei, 
-                                                  zeta=2,
-                                                  mpr=4000,
-                                                  kmean=7000,
-                                                  phase_estimation_costs=False,
-                                                  return_subcosts=True)
+    epsilon_range = np.logspace(-1, -2.5, 4)
+    total_t_complexity = []
+    sampling_total_t_complexity = []
+    sigma_k_vals = [4, 6, 8, 10]
+    for sigma_k in sigma_k_vals:
+        tmp_sampling_total_t_complexity = []
+        for eps in epsilon_range:
+            be_cost, lambda_val, _, tofc_breakdown = \
+            pw_qubitization_with_projectile_costs_from_v5(np=num_bits_momenta, 
+                                                          nn=num_bits_momenta,
+                                                          eta=num_elec, 
+                                                          Omega=volume_bohr, 
+                                                          eps=eps, 
+                                                          nMc=num_bits_nu,
+                                                          nbr=20, 
+                                                          L=num_nuclei, 
+                                                          zeta=2,
+                                                          mpr=4000,
+                                                          kmean=7000,
+                                                          phase_estimation_costs=False,
+                                                          return_subcosts=True)
     
-    synthesizer = TimeEvolutionSynthesizer(block_encoding_costs=tofc_breakdown, evolution_time=1)
-    encoder = ProjectileKineticEnergyEncoder(block_encoding_costs=tofc_breakdown)
+            num_samples = sigma_k**2 / eps**2
+            lambda_by_time = 1 * lambda_val
+            num_queries_to_block_encoding = 2 * (lambda_by_time + 1.04 * (lambda_by_time)**(1/3)) * np.log2(1/eps)**(2/3)
+            tmp_sampling_total_t_complexity.append(num_samples * num_queries_to_block_encoding * be_cost)
+        sampling_total_t_complexity.append(tmp_sampling_total_t_complexity)
 
-    mean_op = construct_mean_estimation_operator(block_encoding_costs=tofc_breakdown, evolution_time=1)
-    circuit = cirq.Circuit(phase_estimation_for_mean_estimation(mean_op, 1.0E-2))
+    for eps in epsilon_range:
+        be_cost, lambda_val, _, tofc_breakdown = \
+        pw_qubitization_with_projectile_costs_from_v5(np=num_bits_momenta, 
+                                                      nn=num_bits_momenta,
+                                                      eta=num_elec, 
+                                                      Omega=volume_bohr, 
+                                                      eps=eps, 
+                                                      nMc=num_bits_nu,
+                                                      nbr=20, 
+                                                      L=num_nuclei, 
+                                                      zeta=2,
+                                                      mpr=4000,
+                                                      kmean=7000,
+                                                      phase_estimation_costs=False,
+                                                      return_subcosts=True)
+    
+        synthesizer = TimeEvolutionSynthesizer(block_encoding_costs=tofc_breakdown, evolution_time=1)
+        encoder = ProjectileKineticEnergyEncoder(block_encoding_costs=tofc_breakdown)
 
-    print(f"{cq.t_complexity(mean_op)=}")
-    print(f"{cq.t_complexity(circuit[:-1])=}")
+        mean_op = construct_mean_estimation_operator(block_encoding_costs=tofc_breakdown, evolution_time=1)
+        circuit = cirq.Circuit(phase_estimation_for_mean_estimation(mean_op, eps))
+
+        # print(f"{cq.t_complexity(mean_op)=}")
+        print(f"{cq.t_complexity(circuit[:-1])=}")
+        total_t_complexity.append(cq.t_complexity(circuit[:-1]).t)
+        print(total_t_complexity[-1])
+
+        num_samples = sigma_k**2 / eps**2
+        lambda_by_time = 1 * lambda_val
+        num_queries_to_block_encoding = 2 * (lambda_by_time + 1.04 * (lambda_by_time)**(1/3)) * np.log2(1/eps)**(2/3)
+        sampling_total_t_complexity.append(num_samples * num_queries_to_block_encoding * be_cost)
+
+    import matplotlib.pyplot as plt
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = 'Arial'
+    colors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853']
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.loglog(epsilon_range, total_t_complexity, color='k', marker='o', linestyle='-', label='KO-QPE')
+    for ii in range(4):
+        ax.loglog(epsilon_range, sampling_total_t_complexity[ii], color=colors[ii], marker='o', linestyle='-', label='Sampling-$\sigma_{{k}}={}$'.format(sigma_k_vals[ii]))
+    ax.tick_params(which='both', labelsize=14, direction='in')
+    ax.set_xlabel("$\epsilon$", fontsize=14)
+    ax.set_ylabel(r"Toffolis", fontsize=14)
+    ax.tick_params(which='both', labelsize=14, direction='in')
+    ax.legend(loc='upper right', fontsize=12, ncol=1, frameon=False)
+    plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
+    plt.savefig("KO_algorithm_h2.png", format="PNG", dpi=300)
+    # plt.show()
+
