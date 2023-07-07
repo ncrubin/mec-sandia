@@ -1,9 +1,11 @@
 """Helper functions for getting FCI coefficients"""
 from typing import List
+from functools import reduce
 
 import fqe
 import numpy as np
-from pyscf import fci, scf
+
+from pyscf import fci, scf, ao2mo
 from pyscf.fci.cistring import make_strings
 
 
@@ -65,3 +67,38 @@ def get_spectrum(mf: scf.RHF, num_roots: int):
     myci = fci.FCI(mf)
     roots, wfs = myci.kernel(nroots=num_roots)
     return roots, wfs
+
+def compute_integrals(pyscf_molecule, pyscf_scf):
+    """
+    Compute the 1-electron and 2-electron integrals.
+
+    Args:
+        pyscf_molecule: A pyscf molecule instance.
+        pyscf_scf: A PySCF "SCF" calculation object.
+
+    Returns:
+        one_electron_integrals: An N by N array storing h_{pq}
+        two_electron_integrals: An N by N by N by N array storing h_{pqrs}.
+    """
+    # Get one electrons integrals.
+    n_orbitals = pyscf_scf.mo_coeff.shape[1]
+    one_electron_compressed = reduce(np.dot, (pyscf_scf.mo_coeff.T,
+                                              pyscf_scf.get_hcore(),
+                                              pyscf_scf.mo_coeff))
+    one_electron_integrals = one_electron_compressed.reshape(
+        n_orbitals, n_orbitals).astype(float)
+
+    # Get two electron integrals in compressed format.
+    two_electron_compressed = ao2mo.kernel(pyscf_molecule,
+                                           pyscf_scf.mo_coeff)
+
+    two_electron_integrals = ao2mo.restore(
+        1, # no permutation symmetry
+        two_electron_compressed, n_orbitals)
+    # See PQRS convention in OpenFermion.hamiltonians._molecular_data
+    # h[p,q,r,s] = (ps|qr)
+    two_electron_integrals = np.asarray(
+        two_electron_integrals.transpose(0, 2, 3, 1), order='C')
+
+    # Return.
+    return one_electron_integrals, two_electron_integrals

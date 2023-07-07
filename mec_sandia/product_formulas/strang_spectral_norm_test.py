@@ -1,22 +1,26 @@
 """Get the Jellium Hamiltonian as an FQE-Hamiltonian"""
+import os
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
+
 import copy
-import openfermion as of
 import numpy as np
 from scipy.linalg import expm
-import fqe
+
 from pyscf import gto, scf, ao2mo
 from pyscf.fci.cistring import make_strings
-from openfermionpyscf._run_pyscf import compute_integrals
-from openfermion import MolecularData
-from openfermionpyscf import PyscfMolecularData
 
+import openfermion as of
+from openfermion import MolecularData, InteractionOperator
+from openfermion.chem.molecular_data import spinorb_from_spatial
+
+import fqe
 from fqe.openfermion_utils import integrals_to_fqe_restricted
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
-from pyscf_utility import get_spectrum, pyscf_to_fqe_wf
-from openfermion import InteractionOperator
-from openfermion.chem.molecular_data import spinorb_from_spatial
-from strang_spectral_norm import spectral_norm_power_method, spectral_norm_svd, spectral_norm_fqe_power_iteration
 
+from mec_sandia.product_formulas.pyscf_utility import get_spectrum, pyscf_to_fqe_wf
+from mec_sandia.product_formulas.strang_spectral_norm import spectral_norm_power_method, spectral_norm_svd, spectral_norm_fqe_power_iteration
+from mec_sandia.product_formulas.pyscf_utility import compute_integrals
 
 def heh_molecule():
     mol = gto.M()
@@ -52,6 +56,7 @@ def heh_molecule():
 
 
     return nmf
+
 
 def lih_molecule(basis='sto-6g'):
     mol = gto.M()
@@ -176,10 +181,6 @@ def test_cirq_spectral_norm():
     print(f"{true_spectral_norm=}")
     print(f"{cirq_spectral_norm=}")
     print(f"{ fqe_spectral_norm=}")
-
-
-
- 
 
 if __name__ == "__main__":
     test_cirq_spectral_norm()

@@ -4,23 +4,20 @@ import copy
 import openfermion as of
 import numpy as np
 from scipy.linalg import expm
-import fqe
+
 from pyscf import gto, scf, ao2mo
 from pyscf.fci.cistring import make_strings
-from openfermionpyscf._run_pyscf import compute_integrals
-from openfermion import MolecularData
-from openfermionpyscf import PyscfMolecularData
 
 import fqe
 from fqe.openfermion_utils import integrals_to_fqe_restricted
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
 from pyscf_utility import get_spectrum, pyscf_to_fqe_wf, get_fqe_wfns
-from openfermion import InteractionOperator
-from openfermion.chem.molecular_data import spinorb_from_spatial
 
+from openfermion import MolecularData, InteractionOperator
+from openfermion.chem.molecular_data import spinorb_from_spatial
 from openfermion.resource_estimates.molecule.pyscf_utils import cas_to_pyscf, pyscf_to_cas
 
-from ueg import UEG, UEGTMP
+from mec_sandia.ueg import UEG, UEGTMP
 
 
 def test_eris():
@@ -126,5 +123,5 @@ def small_system():
 
 
 if __name__ == "__main__":
-    # test_eris()
+    test_eris()
     small_system()

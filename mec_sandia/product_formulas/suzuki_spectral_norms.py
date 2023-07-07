@@ -1,17 +1,19 @@
 """Get the Jellium Hamiltonian as an FQE-Hamiltonian"""
 import copy
-import openfermion as of
 import numpy as np
-import fqe
+
 from pyscf import gto, scf, ao2mo
 from pyscf.fci.cistring import make_strings
-from openfermion import MolecularData
 
+import openfermion as of
+from openfermion import MolecularData, InteractionOperator
+from openfermion.chem.molecular_data import spinorb_from_spatial
+
+import fqe
 from fqe.openfermion_utils import integrals_to_fqe_restricted
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
-from pyscf_utility import get_spectrum, pyscf_to_fqe_wf
-from openfermion import InteractionOperator
-from openfermion.chem.molecular_data import spinorb_from_spatial
+
+from mec_sandia.product_formulas.pyscf_utility import get_spectrum, pyscf_to_fqe_wf
 
 
 def suzuki_trotter_fourth_order_u(work: fqe.Wavefunction, t: float, h0: RestrictedHamiltonian, h1: RestrictedHamiltonian ):
