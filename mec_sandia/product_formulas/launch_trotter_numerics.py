@@ -93,16 +93,12 @@ python -u {root_dir}/{script_name} {args} > {job_name}.dat"""
 
 
 if __name__ == "__main__":
-    basis_sets = ["cc-pvdz", "cc-pvtz"]
-    # basis_sets = ["cc-pvdz"]
-    basis_sets = ["gth-szv", "gth-dzv"]
-    # basis_sets = ["gth-dzv"]
     root_dir = os.getcwd()
     print("Script directory: ", root_dir)
-    nel = [2, 4]#], 6, 8, 10, 12, 14]
+    nel = [2, 4, 6, 8, 10, 12, 14]
     conda_env = "mec"
-    nbasis = [7]#, 9, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33]
-    rs_vals = [1.0]#, 2.0, 3.0, 4.0, 5.0]
+    nbasis = [7, 9, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33]
+    rs_vals = [1.0, 2.0, 3.0, 4.0, 5.0]
     for rs in rs_vals:
         make_and_change_dir(f"rs_{rs}")
         rs_dir = os.getcwd()
