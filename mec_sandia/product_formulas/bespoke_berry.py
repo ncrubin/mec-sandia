@@ -63,7 +63,7 @@ def evolve_s2_trotter(work: fqe.Wavefunction,
                                         algo='taylor',
                                         ops=h1,
                                         accuracy=1.0E-20,
-                                        expansion=60,
+                                        expansion=200,
                                         verbose=False)
     work = work.time_evolve(t * 0.5, h0)
     return work
@@ -127,10 +127,10 @@ def berry_deltadagdelta_action(work: fqe.Wavefunction,
                          h0: RestrictedHamiltonian,
                          h1: RestrictedHamiltonian):
     og_work = copy.deepcopy(work)
-    w1 = exact_then_berry_u_inverse(work, t, full_ham, h0, h1) + berry_u_then_exact_inverse(work, t, full_ham, h0, h1)
+    w1 = exact_then_berry_u_inverse(work, t, full_ham, h0, h1)
+    w2 = berry_u_then_exact_inverse(work, t, full_ham, h0, h1)
     og_work.scale(2.)
-    work = og_work - w1
-    return work
+    return og_work - w1 - w2
 
 def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
                         t: float,
@@ -167,6 +167,8 @@ if __name__ == "__main__":
     # mol_mf = lih_molecule(basis='sto-3g')
     mol_mf = heh_molecule()
     nelec = mol_mf.mol.nelectron
+    nalpha = nelec // 2
+    nbeta = nelec // 2
     norb = mol_mf.mo_coeff.shape[0]
     print(f"{nelec=}", f"{norb=}")
     sz = 0
@@ -199,6 +201,7 @@ if __name__ == "__main__":
     print("Starting Berry construction")
     berry_u = u_berry_bespoke_cirq(t, sparse_ham_ob, sparse_ham_tb) 
     diff_u = berry_u - exact_u
+    diff_u_expanded = 2 * np.eye(berry_u.shape[0]) - berry_u.conj().T @ exact_u - exact_u.conj().T @ berry_u
     cirq_spectral_norm, max_vec = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-10, return_vec=True)
     print()
     print(f"{cirq_spectral_norm=}")
@@ -216,8 +219,84 @@ if __name__ == "__main__":
     print(f"{ fqe_spectral_norm=}")
     print(f"{cirq_spectral_norm=}")
 
-    true_wfn_cirq = berry_u @ max_vec
-    true_wfn_fqe = fqe.from_cirq(true_wfn_cirq, thresh=1.0E-14)
+    tst_sqrt = np.sqrt(np.abs(max_vec.conj().T @ diff_u_expanded @ max_vec))
+    print(f"{tst_sqrt=}")
+    assert np.isclose(tst_sqrt, true_spec_norm)
 
+    # up
+    berry_u_action_cirq = berry_u @ max_vec
+    berry_u_action_cirq = fqe.from_cirq(berry_u_action_cirq, thresh=1.0E-14)
+    test_berry_u_action_fqe = berry_bespoke(max_vec_wfn, t, fqe_ham_ob, fqe_ham_tb)
+    assert np.isclose(fqe.vdot(test_berry_u_action_fqe, berry_u_action_cirq), 1)
+
+    # u
+    exact_u_action_cirq = exact_u @ max_vec
+    exact_u_action_cirq = fqe.from_cirq(exact_u_action_cirq, thresh=1.0E-14)
+    test_exact_u_action_fqe = max_vec_wfn.apply_generated_unitary(time=t,
+                                        algo='taylor',
+                                        ops=fqe_ham,
+                                        accuracy=1.0E-20,
+                                        expansion=200,
+                                        verbose=True)
+    assert np.isclose(fqe.vdot(test_exact_u_action_fqe, exact_u_action_cirq), 1)
+
+    # up^u
+    part_delta_cirq = berry_u.conj().T @ exact_u @ max_vec
+    part_delta_cirq = fqe.from_cirq(part_delta_cirq, thresh=1.0E-14)
+    test_part_delta_fqe = max_vec_wfn.apply_generated_unitary(time=t,
+                                        algo='taylor',
+                                        ops=fqe_ham,
+                                        accuracy=1.0E-20,
+                                        expansion=200,
+                                        verbose=True)
+    test_part_delta_fqe = berry_bespoke(test_part_delta_fqe, -t, fqe_ham_ob, fqe_ham_tb)
+    assert np.isclose(fqe.vdot(test_part_delta_fqe, part_delta_cirq), 1)
+
+    # (up^u + u^ up)
+    part_delta_cirq = (berry_u.conj().T @ exact_u + exact_u.conj().T @ berry_u) @ max_vec
+    part_delta_cirq = fqe.from_cirq(part_delta_cirq, thresh=1.0E-14)
+    test_part_delta_fqe1 = max_vec_wfn.apply_generated_unitary(time=t,
+                                        algo='taylor',
+                                        ops=fqe_ham,
+                                        accuracy=1.0E-20,
+                                        expansion=200,
+                                        verbose=True)
+    test_part_delta_fqe1 = berry_bespoke(test_part_delta_fqe1, -t, fqe_ham_ob, fqe_ham_tb)
+
+    test_part_delta_fqe2 = berry_bespoke(max_vec_wfn, t, fqe_ham_ob, fqe_ham_tb)
+    test_part_delta_fqe2 = test_part_delta_fqe2.apply_generated_unitary(time=-t,
+                                        algo='taylor',
+                                        ops=fqe_ham,
+                                        accuracy=1.0E-20,
+                                        expansion=200,
+                                        verbose=True)
+    test_part_delta_fqe = test_part_delta_fqe1 +  test_part_delta_fqe2
+    assert np.allclose(test_part_delta_fqe.sector((nelec, 0)).coeff, part_delta_cirq.sector((nelec, 0)).coeff)
+    assert np.isclose(test_part_delta_fqe.norm(), part_delta_cirq.norm())
+
+    # 2 - (up^u + u^ up)
+    full_delta_cirq = 2 * max_vec - (berry_u.conj().T @ exact_u + exact_u.conj().T @ berry_u) @ max_vec
+    full_delta_cirq = fqe.from_cirq(full_delta_cirq, thresh=1.0E-14)
+
+    new_wf = copy.deepcopy(max_vec_wfn)
+    new_wf.scale(2)
+    test_full_delta_fqe = new_wf - test_part_delta_fqe
+    assert np.allclose(test_full_delta_fqe.sector((nelec, 0)).coeff, full_delta_cirq.sector((nelec, 0)).coeff)
+
+    test_out = berry_deltadagdelta_action(max_vec_wfn, t, fqe_ham, fqe_ham_ob, fqe_ham_tb)
+    assert np.allclose(test_out.sector((nelec, 0)).coeff, full_delta_cirq.sector((nelec, 0)).coeff)
+
+    print("Test out")
+    test_out.print_wfn(threshold=1.E-15)
+    print("full_delta_cirq")
+    full_delta_cirq.print_wfn(threshold=1.0E-15)
+    print(full_delta_cirq.sector((nelec, 0)).coeff)
+    print(test_out.sector((nelec, 0)).coeff)
+    exit()
+    tsqrt_fqe = fqe.vdot(max_vec_wfn, test_out)
+    print(tsqrt_fqe)
+    print(max_vec.conj().T @ fqe.to_cirq(test_out))
+    print(max_vec.conj().T @ fqe.to_cirq(full_delta_cirq))
+    print(np.sqrt(np.abs(max_vec.conj().T @ fqe.to_cirq(full_delta_cirq))))
 
 
