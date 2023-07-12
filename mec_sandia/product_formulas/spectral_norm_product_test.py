@@ -3,15 +3,11 @@ import os
 os.environ['OMP_NUM_THREADS'] = '4'
 os.environ['MKL_NUM_THREADS'] = '4'
 
-import copy
 import numpy as np
 from scipy.linalg import expm
 
-from pyscf import gto, scf, ao2mo
-from pyscf.fci.cistring import make_strings
-
 import openfermion as of
-from openfermion import MolecularData, InteractionOperator
+from openfermion import InteractionOperator
 from openfermion.chem.molecular_data import spinorb_from_spatial
 
 import fqe
@@ -19,80 +15,8 @@ from fqe.openfermion_utils import integrals_to_fqe_restricted
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
 
 from mec_sandia.product_formulas.pyscf_utility import get_spectrum, pyscf_to_fqe_wf
-from mec_sandia.product_formulas.strang_spectral_norm import spectral_norm_power_method, spectral_norm_svd, spectral_norm_fqe_power_iteration
-from mec_sandia.product_formulas.pyscf_utility import compute_integrals
+from mec_sandia.product_formulas.systems.molecules import lih_molecule, heh_molecule
 
-def heh_molecule():
-    mol = gto.M()
-    mol.atom = [['He', 0, 0, 0], ['H', 0, 0, 1.4]]
-    mol.charge = +1
-    mol.basis = 'sto-6g'
-    mol.build()
-
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    obi, tbi = compute_integrals(mf.mol, mf)
-    ecore = mf.energy_nuc()
-    norb = obi.shape[0]
-
-    nmol = gto.M()
-    nmol.nelectron = mol.nelectron
-    nmf = scf.RHF(mol)
-    nmf.mo_coeff = np.eye(norb)
-    nmf.get_hcore = lambda *args: obi
-    nmf.get_ovlp = lambda *args: np.eye(norb)
-    nmf._eri = tbi.transpose((0, 3, 1, 2))
-    nmf.energy_nuc = lambda *args: ecore
-    nmf.kernel()
-
-    # check if integrals in chem ordering
-    two_electron_compressed = ao2mo.kernel(mf.mol,
-                                           mf.mo_coeff)
-    two_electron_integrals = ao2mo.restore(
-        1, # no permutation symmetry
-        two_electron_compressed, norb)
-    assert np.allclose(two_electron_integrals, nmf._eri)
-
-
-    return nmf
-
-
-def lih_molecule(basis='sto-6g'):
-    mol = gto.M()
-    mol.atom = [['Li', 0, 0, 0], ['H', 0, 0, 1.4]]
-    mol.basis = basis
-    mol.build()
-
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    obi, tbi = compute_integrals(mf.mol, mf)
-    ecore = mf.energy_nuc()
-    norb = obi.shape[0]
-
-    nmol = gto.M()
-    nmol.nelectron = mol.nelectron
-    nmf = scf.RHF(mol)
-    nmf.mo_coeff = np.eye(norb)
-    nmf.get_hcore = lambda *args: obi
-    nmf.get_ovlp = lambda *args: np.eye(norb)
-    nmf._eri = tbi.transpose((0, 3, 1, 2))
-    nmf.energy_nuc = lambda *args: ecore
-    nmf.kernel()
-
-    # check if integrals in chem ordering
-    two_electron_compressed = ao2mo.kernel(mf.mol,
-                                           mf.mo_coeff)
-    two_electron_integrals = ao2mo.restore(
-        1, # no permutation symmetry
-        two_electron_compressed, norb)
-    assert np.allclose(two_electron_integrals, nmf._eri)
-
-
-    return nmf
-
- 
 
 def power_method_test():
     np.random.seed(10)
@@ -159,28 +83,10 @@ def test_cirq_spectral_norm():
     low_level_spectrum = sigma_true[:10]
     print(f"{low_level_spectrum=}")
 
-    # w, v = np.linalg.eigh(diff_u.conj().T @ diff_u)
-    # w = w[::-1]
-    # v = v[:, ::-1]
-    # eigfunc_overlaps = v.conj().T @ x_cirq
-    # print(eigfunc_overlaps[:10])
-    # max_eigfunc = fqe.from_cirq(v[:, 0].flatten(), thresh=1.E-12)
-    # max_eigfunc.print_wfn()
-    # exit()
-
-    # # print(spectral_norm_svd(diff_u))
-    # # exit()
-    cirq_spectral_norm = spectral_norm_power_method(diff_u, x_cirq, verbose=True, stop_eps=1.0E-10)
+    from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_power_method as spectral_norm_power_method_cirq, spectral_norm_fqe_power_iteration
+    cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-10)
     print(f"{true_spectral_norm=}")
     print(f"{cirq_spectral_norm=}")
-
-    # this is not necessarily true
-    # assert np.isclose(true_spectral_norm, cirq_spectral_norm)
-
-    fqe_spectral_norm = spectral_norm_fqe_power_iteration(x_wfn, t, fqe_ham, fqe_ham_ob, fqe_ham_tb, verbose=True, stop_eps=1.0E-10)
-    print(f"{true_spectral_norm=}")
-    print(f"{cirq_spectral_norm=}")
-    print(f"{ fqe_spectral_norm=}")
 
 if __name__ == "__main__":
     test_cirq_spectral_norm()

@@ -1,19 +1,10 @@
 """Get the Jellium Hamiltonian as an FQE-Hamiltonian"""
 import copy
-import numpy as np
-
-from pyscf import gto, scf, ao2mo
-from pyscf.fci.cistring import make_strings
-
-import openfermion as of
-from openfermion import MolecularData, InteractionOperator
-from openfermion.chem.molecular_data import spinorb_from_spatial
-
 import fqe
-from fqe.openfermion_utils import integrals_to_fqe_restricted
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
+from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
 
-from mec_sandia.product_formulas.pyscf_utility import get_spectrum, pyscf_to_fqe_wf
+MAX_EXPANSION_LIMIT = 200
 
 
 def suzuki_trotter_fourth_order_u(work: fqe.Wavefunction, t: float, h0: RestrictedHamiltonian, h1: RestrictedHamiltonian ):
@@ -34,11 +25,18 @@ def suzuki_trotter_fourth_order_u(work: fqe.Wavefunction, t: float, h0: Restrict
               0.4144907717943757, 
               0.4144907717943757, 
               0.20724538589718786]
+    assert h0.quadratic() == True 
     for ii in range(len(indices)):
         if indices[ii] == 0:
             work = work.time_evolve(t * coeffs[ii], h0)
         elif indices[ii] == 1:
-            work = work.time_evolve(t * coeffs[ii], h1)
+            work = apply_unitary_wrapper(base=work,
+                                         time=t * coeffs[ii],
+                                         algo='taylor',
+                                         ops=h1,
+                                         accuracy=1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         verbose=False)
         else:
             raise ValueError("The impossible has happened")
     return work
@@ -68,7 +66,13 @@ def suzuki_trotter_sixth_order_u(work: fqe.Wavefunction, t: float, h0: Restricte
         if indices[ii] == 0:
             work = work.time_evolve(t * coeffs[ii], h0)
         elif indices[ii] == 1:
-            work = work.time_evolve(t * coeffs[ii], h1)
+            work = apply_unitary_wrapper(base=work,
+                                         time=t * coeffs[ii],
+                                         algo='taylor',
+                                         ops=h1,
+                                         accuracy=1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         verbose=False)
         else:
             raise ValueError("The impossible has happened")
     return work
@@ -105,7 +109,14 @@ def suzuki_u_then_exact_inverse(work: fqe.Wavefunction,
         work = suzuki_trotter_sixth_order_u(work, t, h0, h1)
     else:
         raise ValueError("Suzuki Order {} not coded".format(suzuki_order))
-    work = work.time_evolve(-t, full_ham)
+    work = apply_unitary_wrapper(base=work,
+                                 time=-t,
+                                 algo='taylor',
+                                 ops=full_ham,
+                                 accuracy=1.0E-20,
+                                 expansion=MAX_EXPANSION_LIMIT,
+                                 verbose=False)
+
     return work
 
 def deltadagdelta_action(work: fqe.Wavefunction,
@@ -120,35 +131,3 @@ def deltadagdelta_action(work: fqe.Wavefunction,
     og_work.scale(2)
     work = og_work - w1
     return work
-
-
-def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
-                        t: float,
-                        full_ham: RestrictedHamiltonian,
-                        h0: RestrictedHamiltonian,
-                        h1: RestrictedHamiltonian,
-                        verbose=True,
-                        stop_eps=1.0E-8,
-                        suzuki_order=4):
-    """Return spectral norm of the difference between product formula unitary and not"""
-    prev_sqrt_lam_max = np.inf
-    delta_sqrt_lam_max = np.inf
-    iter_val = 0
-    work.normalize()
-    while delta_sqrt_lam_max > stop_eps:
-        work = deltadagdelta_action(work, t, full_ham, h0, h1, suzuki_order=suzuki_order)
-        rnorm = work.norm()
-        work.scale(1/rnorm) 
-        sqrt_lam_max = np.sqrt(
-            np.abs(
-            fqe.vdot(work, deltadagdelta_action(work, t, full_ham, h0, h1, suzuki_order=suzuki_order))
-            )
-            )
-        delta_sqrt_lam_max = np.abs(prev_sqrt_lam_max - sqrt_lam_max)
-        if verbose:
-            print(iter_val, f"{sqrt_lam_max=}", f"{delta_sqrt_lam_max=}")
-        prev_sqrt_lam_max = sqrt_lam_max
-        iter_val += 1
-
-    return sqrt_lam_max
-

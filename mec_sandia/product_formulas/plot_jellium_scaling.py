@@ -32,21 +32,28 @@ def main():
     # tvals = np.logspace(-1, -3, 10)
     # tvals = np.logspace(-0.5, -2, 10)
 
-
     berry_norms = np.load("berry_spectral_norms.npy")
-    tvals = np.logspace(0.0, -0.1, 5)
+    cirq_norms = np.load("cirq_spectral_norms.npy")
+    tvals = np.load("tvals.npy")
 
-    params = fit_linear(np.log(tvals), np.log(berry_norms))
-    x_vals = np.logspace(0, -0.1, 50)
-    y_vals = np.exp(params[1]) * x_vals**params[0]
+
+    # params = fit_linear(np.log(tvals), np.log(berry_norms))
+    x_vals = np.logspace(np.log10(tvals)[0], np.log10(tvals)[-1], 50)
+    # y_vals = np.exp(params[1]) * x_vals**params[0]
+
+    params2 = fit_linear(np.log(tvals), np.log(cirq_norms))
+    x_vals2 = np.logspace(np.log10(tvals)[0], np.log10(tvals)[-1], 50)
+    y_vals2 = np.exp(params2[1]) * x_vals**params2[0]
+
+
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    # ax.loglog(tvals, strang_norms, color=colors[0], mfc='None', mec=colors[0], marker='o', linestyle='-', label='Strang')
-    # ax.loglog(tvals, suzuki_4_norms, color=colors[1], mfc='None', mec=colors[1], marker='o', linestyle='-', label='Suzuki-4')
-    # ax.loglog(tvals, suzuki_6_norms, color=colors[2], mfc='None', mec=colors[2], marker='o', linestyle='-', label='Suzuki-6')
-    ax.loglog(tvals, berry_norms, color=colors[3], mfc='None', mec=colors[3], marker='o', linestyle='-', label='Berry-8')
-    ax.loglog(x_vals, y_vals, color=colors[3], linestyle='--', label=r"$\mathcal{{O}}(t^{{{:2.2f}}})$".format(params[0]))
+    # ax.loglog(tvals, berry_norms, color=colors[3], mfc='None', mec=colors[3], marker='o', linestyle='-', label='Berry-8')
+    # ax.loglog(x_vals, y_vals, color=colors[3], linestyle='--', label=r"$\mathcal{{O}}(t^{{{:2.2f}}})$".format(params[0]))
+    ax.loglog(tvals, cirq_norms, color=colors[2], mfc='None', mec=colors[2], marker='o', linestyle='-', label='Cirq-Berry-8')
+    ax.loglog(x_vals2, y_vals2, color=colors[2], linestyle='--', label=r"$\mathcal{{O}}(t^{{{:2.2f}}})$".format(params2[0]))
 
+ 
     ax.tick_params(which='both', labelsize=14, direction='in')
     ax.set_xlabel("$t\;[U(t)]$", fontsize=14)
     ax.set_ylabel(r"$||U_{\mathrm{prod}}(t) - U_{\mathrm{exact}}(t)||$", fontsize=14)
