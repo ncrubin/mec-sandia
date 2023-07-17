@@ -45,13 +45,20 @@ def u_berry_bespoke_cirq(
     return u
 
 
-
 def evolve_s2_trotter(work: fqe.Wavefunction,
                       t: float,
                       h0: RestrictedHamiltonian,
                       h1: RestrictedHamiltonian):
     assert h0.quadratic() == True
     work = work.time_evolve(t * 0.5, h0) # this should be exact
+    # work = apply_unitary_wrapper(base=work,
+    #                              time=t * 0.5,
+    #                              algo='taylor',
+    #                              ops=h0,
+    #                              accuracy=1.0E-20,
+    #                              expansion=MAX_EXPANSION_LIMIT,
+    #                              verbose=False)
+
     work = apply_unitary_wrapper(base=work,
                                  time=t,
                                  algo='taylor',
@@ -60,6 +67,13 @@ def evolve_s2_trotter(work: fqe.Wavefunction,
                                  expansion=MAX_EXPANSION_LIMIT,
                                  verbose=False)
     work = work.time_evolve(t * 0.5, h0)
+    # work = apply_unitary_wrapper(base=work,
+    #                              time=t * 0.5,
+    #                              algo='taylor',
+    #                              ops=h0,
+    #                              accuracy=1.0E-20,
+    #                              expansion=MAX_EXPANSION_LIMIT,
+    #                              verbose=False)
     return work
 
 def berry_bespoke(work: fqe.Wavefunction,
