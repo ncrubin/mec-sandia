@@ -1,5 +1,20 @@
 """
 Calculate  The GHL norm and system
+
+See note for set up
+
+set box-length and grid points. These define the real space grid
+
+ivals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+jvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+kvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+
+r_{p} = p * Omega^{1/3} / N^{1/3}
+
+N^{1/3} = points_per_dim
+Omega^{1/3} = L
+
+
 """
 import itertools
 import math
@@ -22,10 +37,11 @@ class RealSpaceGrid:
         self.omega = np.linalg.det(box_length * np.eye(3))
         self.kfac = 2 * math.pi / self.L
         self.miller_vals = None
+        self.norb = points_per_dim**3
 
     def get_miller(self):
         if self.miller_vals is not None:
-            return self.ijk_vals
+            return self.miller_vals
         reciprocal_max_dim = (self.points_per_dim - 1) / 2
         # build all possible sets of miller indices
         ivals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
@@ -34,10 +50,21 @@ class RealSpaceGrid:
         ijk_vals = cartesian_prod([ivals, jvals, kvals])
         self.miller_vals = ijk_vals
         return ijk_vals
+    
+    def get_real_space_grid(self):
+        if self.miller_vals is None:
+            self.miller_vals = self.get_miller()
+        return self.L * self.miller_vals / self.points_per_dim
+    
+    def get_momentum_space_grid(self):
+        if self.miller_vals is None:
+            self.miller_vals = self.get_miller()
+        return 2 * np.pi * self.miller_vals / self.L
 
     def get_eris(self):
         """
         Return Chemist ordered ERIs (1'1|2'2)
+        The factor of 1/2 is ALREADY included in this
         """
         ijk_vals = self.get_miller()
         norb = len(ijk_vals)
@@ -57,54 +84,26 @@ class RealSpaceGrid:
         eris *= self.points_per_dim / (2 * self.L)
         return eris
 
-    def fourier_transform_matrix(self, miller_vals):
-        dx = self.L / self.points_per_dim
-        real_space_grid = miller_vals * dx
-        print(real_space_grid)
+    def fourier_transform_matrix(self):
+        """position space to momentum space
+        |k> = 1/sqrt(N) exp(-i k.r) |r> 
+        r - > k is (1/sqrt(N)) exp[-i k_{nu} r_{p}] = (1 / sqrt(N)) exp[-i 2pi nu (nu . p) / N^{1/3}]
+        """
+        real_space_grid = self.get_real_space_grid()
+        momentum_space_grid = self.get_momentum_space_grid()
+        w_exponent = -1j * np.einsum('ix,jx->ij', momentum_space_grid, real_space_grid)
+        return np.exp(w_exponent) / np.sqrt(self.norb)
         
-    def get_h1(self,):
+    def get_kspace_h1(self,):
         """
         Generate diagonal kinetic energy term and then compute the inverse 
         fourier transform 
         """
-        ijk_vals = self.get_miller()
-        print(ijk_vals * self.L / self.points_per_dim)
-        exit()
-        gvals = 2 * np.pi * ijk_vals / self.L
-        print(gvals)
-        exit()
-        # compute g^2
-        g2vals = np.einsum('ix,ix->i', gvals, gvals)
-        self.fourier_transform_matrix(ijk_vals)
+        knu = self.get_momentum_space_grid()
+        return 0.5 * np.einsum('ix,ix->i', knu, knu)
 
-if __name__ == "__main__":
-    # rsg_inst = RealSpaceGrid(5, 15)
-    # rsg_inst.get_h1()
-
-    import matplotlib.pyplot as plt
-    L = 5
-    N = 9
-    miller = np.arange(N)
-
-    U_ft = np.zeros((N, N), dtype=np.complex128)
-    for k in range(N):
-        for n in range(N):
-            U_ft[k, n] = np.exp(-1j * 2 * np.pi * n * k / N)
-    U_ft *= 1./np.sqrt(N)
-    assert np.allclose(U_ft.conj().T @ U_ft, np.eye(N))
-
-    xk0 = np.zeros(N)
-    xk0[0] = 1.
-    xk0_x = U_ft.conj().T @ xk0
-    print(xk0_x)
-    assert np.allclose(xk0_x, 1./np.sqrt(N))
-
-    xk1 = np.zeros(N)
-    xk1[1] = 1.
-    xk1_x = U_ft.conj().T @ xk1
-    print(xk1_x)
-    # arange n-index , k=1
-    true_vec = np.exp(1j * 2 * np.pi * np.arange(N) / N) / np.sqrt(N)
-    assert np.allclose(xk1_x, true_vec)
-
-    
+    def get_rspace_h1(self,):
+        # recall |r> = U_ft^{dag}|k>
+        diag_k_space_h1 = np.diag(self.get_kspace_h1())
+        u_ft = self.fourier_transform_matrix()
+        return u_ft.conj().T @ diag_k_space_h1 @ u_ft
