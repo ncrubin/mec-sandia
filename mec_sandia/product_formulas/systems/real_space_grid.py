@@ -32,8 +32,10 @@ class RealSpaceGrid:
         """
         self.L = box_length
         self.points_per_dim = points_per_dim
-        if np.isclose(self.points_per_dim % 2, 0):
-            raise ValueError("number of points in a direction must be odd")
+
+        # if np.isclose(self.points_per_dim % 2, 0):
+        #     raise ValueError("number of points in a direction must be odd")
+
         self.omega = np.linalg.det(box_length * np.eye(3))
         self.kfac = 2 * math.pi / self.L
         self.miller_vals = None
@@ -42,13 +44,21 @@ class RealSpaceGrid:
     def get_miller(self):
         if self.miller_vals is not None:
             return self.miller_vals
-        reciprocal_max_dim = (self.points_per_dim - 1) / 2
-        # build all possible sets of miller indices
-        ivals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
-        jvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
-        kvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
-        ijk_vals = cartesian_prod([ivals, jvals, kvals])
-        self.miller_vals = ijk_vals
+        if np.isclose(self.points_per_dim % 2, 1):
+            reciprocal_max_dim = (self.points_per_dim - 1) / 2
+            # build all possible sets of miller indices
+            ivals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+            jvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+            kvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim+1)
+            ijk_vals = cartesian_prod([ivals, jvals, kvals])
+            self.miller_vals = ijk_vals
+        else:
+            reciprocal_max_dim = self.points_per_dim / 2
+            ivals = np.arange(-reciprocal_max_dim, reciprocal_max_dim)
+            jvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim)
+            kvals = np.arange(-reciprocal_max_dim, reciprocal_max_dim)
+            ijk_vals = cartesian_prod([ivals, jvals, kvals])
+            self.miller_vals = ijk_vals
         return ijk_vals
     
     def get_real_space_grid(self):
@@ -107,3 +117,8 @@ class RealSpaceGrid:
         diag_k_space_h1 = np.diag(self.get_kspace_h1())
         u_ft = self.fourier_transform_matrix()
         return u_ft.conj().T @ diag_k_space_h1 @ u_ft
+
+if __name__ == "__main__":
+    rsg = RealSpaceGrid(5, 4)
+    u = rsg.fourier_transform_matrix()
+    assert np.allclose(u.conj().T @ u, np.eye(4**3))

@@ -50,6 +50,7 @@ def test_rspace_h1():
     w = sorted(rsg_inst.get_kspace_h1())
     assert np.allclose(wt, w)
 
-if __name__ == "__main__":
-    # test_fourier_transform() 
-    test_rspace_h1()
+def test_even_number_points():
+    rsg = RealSpaceGrid(5, 4)
+    u = rsg.fourier_transform_matrix()
+    assert np.allclose(u.conj().T @ u, np.eye(4**3))
