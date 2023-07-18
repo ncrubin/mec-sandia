@@ -117,6 +117,8 @@ class RealSpaceGrid:
         diag_k_space_h1 = np.diag(self.get_kspace_h1())
         u_ft = self.fourier_transform_matrix()
         return u_ft.conj().T @ diag_k_space_h1 @ u_ft
+        # return np.einsum('ix,x,xj->ij', u_ft.conj().T, self.get_kspace_h1(), u_ft)
+       
 
 if __name__ == "__main__":
     rsg = RealSpaceGrid(5, 4)

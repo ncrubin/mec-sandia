@@ -20,7 +20,7 @@ from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
 
 # from mec_sandia.ueg import UEG, UEGTMP
 from mec_sandia.product_formulas.systems.molecules import lih_molecule, heh_molecule
-from mec_sandia.product_formulas.bespoke_berry import berry_deltadagdelta_action
+from mec_sandia.product_formulas.bespoke_berry import berry_deltadagdelta_action, berry_delta_action
 from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_power_method as spectral_norm_power_method_cirq
 from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_fqe_power_iteration
 
@@ -83,13 +83,13 @@ def small_system():
         diff_u = berry_u - exact_u
         # diff_u_expanded = 2. * np.eye(berry_u.shape[0]) - berry_u.T.conj() @ exact_u - exact_u.T.conj() @ berry_u
 
-        cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-20)
+        cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-14)
         cirq_spectral_norms.append(cirq_spectral_norm)
         print(f"{cirq_spectral_norm=}")
 
         # compute spectral norm
         fqe_spectral_norm = spectral_norm_fqe_power_iteration(x_wfn, t, fqe_ham, fqe_ham_ob, fqe_ham_tb, 
-                                                    berry_deltadagdelta_action,
+                                                    berry_delta_action,
                                                     verbose=True, stop_eps=1.0E-14)
         berry_spectral_norms.append(fqe_spectral_norm)
         print(f"{ fqe_spectral_norm=}")

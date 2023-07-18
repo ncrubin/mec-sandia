@@ -17,9 +17,9 @@ def compute_nu_eta_norm(rsg: RealSpaceGrid, eta: int) -> float:
 
 if __name__ == "__main__":
     # first test scaling with N
-    for ppd in [2, 3, 4, 5]:
+    for ppd in [2, 3, 4, 5, 6]:
         rsg = RealSpaceGrid(5, ppd)
         test_tau_norm = compute_tau_norm(rsg)
         rspace_h1 = rsg.get_rspace_h1()
         tau_norm_val = np.max(rsg.get_kspace_h1())
-        print(ppd, test_tau_norm / tau_norm_val)
+        print(ppd, ppd**3, test_tau_norm / tau_norm_val)

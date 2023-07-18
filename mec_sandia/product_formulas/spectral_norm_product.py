@@ -12,27 +12,26 @@ def spectral_norm_power_method(A, x, verbose=False, stop_eps=1.0E-8, return_vec=
     This is accomplished by finding the largest eigenvalue of A\dag A
     using the power method and then taking the square root.
     """
-    prev_sqrt_lam_max = np.inf
-    delta_sqrt_lam_max = np.inf
+    prev_spec_norm_estimate = np.inf
+    delta_spec_norm_estimate = np.inf
     iter_val = 0
     x /= np.linalg.norm(x)
-    AdA = A.conj().T @ A
-    while delta_sqrt_lam_max > stop_eps:
-        r = AdA @ x
-        rnorm = np.linalg.norm(r)
-        x = r / rnorm
-        sqrt_lam_max = np.sqrt((x.conj().T @ AdA @ x).real)
-
-        delta_sqrt_lam_max = np.abs(prev_sqrt_lam_max - sqrt_lam_max)
+    Ad = A.conj().T 
+    while delta_spec_norm_estimate > stop_eps:
+        x = A @ x
+        spec_norm_estimate = np.linalg.norm(x)
+        x = Ad @ x
+        x /= np.linalg.norm(x)
+        delta_spec_norm_estimate = np.abs(prev_spec_norm_estimate - spec_norm_estimate)
         if verbose:
-            print(iter_val, f"{sqrt_lam_max=}", f"{delta_sqrt_lam_max=}", f"{np.sqrt(rnorm)=}", f"{(np.sqrt(rnorm) - sqrt_lam_max)=}")
-        prev_sqrt_lam_max = sqrt_lam_max
+            print(iter_val, f"{spec_norm_estimate=}", f"{delta_spec_norm_estimate=}")
+        prev_spec_norm_estimate = spec_norm_estimate
         iter_val += 1
 
     if return_vec:
-        return sqrt_lam_max, x
+        return spec_norm_estimate, x
     else:
-        return sqrt_lam_max
+        return spec_norm_estimate
 
 def spectral_norm_power_method_hermitian_mat(A, x, verbose=False, stop_eps=1.0E-8, return_vec=False):
     """
@@ -71,7 +70,7 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
                         full_ham: RestrictedHamiltonian,
                         h0: RestrictedHamiltonian,
                         h1: RestrictedHamiltonian,
-                        deltadag_delta_action,
+                        delta_action,
                         verbose=True,
                         stop_eps=1.0E-8) -> float:
     """Return spectral norm of the difference between product formula unitary and exact unitary
@@ -83,30 +82,23 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
     :param h0: the one-body (quadratic) part of the Hamiltonian
     :param h1: the two-body part of the Hamiltonian
     """
-    prev_sqrt_lam_max = np.inf
-    delta_sqrt_lam_max = np.inf
+    prev_spec_norm_estimate = np.inf
+    delta_spec_norm_estimate = np.inf
     iter_val = 0
     work.normalize()
-    while delta_sqrt_lam_max > stop_eps:
+    while delta_spec_norm_estimate > stop_eps:
         start_time = time.time()
-        work = deltadag_delta_action(work, t, full_ham, h0, h1)
+        work = delta_action(work, t, full_ham, h0, h1)
+        spec_norm_estimate = work.norm()
+        work = delta_action(work, -t, full_ham, h0, h1)
         rnorm = work.norm()
-        work.scale(1./rnorm) 
-        # sqrt_lam_max = np.sqrt(
-        #     np.abs(
-        #     fqe.vdot(work, deltadag_delta_action(work, t, full_ham, h0, h1))
-        #     ))
-
-        # since A^A v approx lambda_max v.  We use the norm of the vector
-        # which should converge to the eigenvalue. This saves applying the 
-        # A^A twice per iteration
-        sqrt_lam_max = np.sqrt(rnorm)         
+        work.scale(1./rnorm)
         end_time = time.time()
-        delta_sqrt_lam_max = np.abs(prev_sqrt_lam_max - sqrt_lam_max)
+        delta_spec_norm_estimate = np.abs(prev_spec_norm_estimate - spec_norm_estimate)
         if verbose:
-            print(iter_val, f"{sqrt_lam_max=}", f"{delta_sqrt_lam_max=}", "iter_time = {}".format((end_time - start_time)))
-        prev_sqrt_lam_max = sqrt_lam_max
+            print(iter_val, f"{spec_norm_estimate=}", f"{delta_spec_norm_estimate=}", "iter_time = {}".format((end_time - start_time)))
+        prev_spec_norm_estimate = spec_norm_estimate
         iter_val += 1
 
-    return sqrt_lam_max
+    return spec_norm_estimate
 
