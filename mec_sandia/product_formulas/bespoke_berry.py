@@ -133,6 +133,21 @@ def berry_u_then_exact_inverse(work: fqe.Wavefunction,
                                  )
     return work
 
+def berry_delta_action(work: fqe.Wavefunction,
+                       t: float,
+                       full_ham: RestrictedHamiltonian,
+                       h0: RestrictedHamiltonian,
+                       h1: RestrictedHamiltonian):
+    product_wf = berry_bespoke(work, t, h0, h1)
+    exact_wf = apply_unitary_wrapper(base=work,
+                                     time=t,
+                                     algo='taylor',
+                                     ops=full_ham,
+                                     accuracy = 1.0E-20,
+                                     expansion=MAX_EXPANSION_LIMIT,
+                                     verbose=False)
+    return product_wf - exact_wf
+
 def berry_deltadagdelta_action(work: fqe.Wavefunction,
                          t: float,
                          full_ham: RestrictedHamiltonian,

@@ -119,12 +119,35 @@ def suzuki_u_then_exact_inverse(work: fqe.Wavefunction,
 
     return work
 
+def delta_action(work: fqe.Wavefunction,
+                 t: float,
+                 full_ham: RestrictedHamiltonian,
+                 h0: RestrictedHamiltonian,
+                 h1: RestrictedHamiltonian,
+                 suzuki_order='4'):
+
+    if suzuki_order == 4:
+        product_wf = suzuki_trotter_fourth_order_u(work, t, h0, h1)
+    elif suzuki_order == 6:
+        product_wf = suzuki_trotter_sixth_order_u(work, t, h0, h1)
+    else:
+        raise ValueError("Suzuki Order {} not coded".format(suzuki_order))
+    exact_wf = apply_unitary_wrapper(base=work,
+                                     time=t,
+                                     algo='taylor',
+                                     ops=full_ham,
+                                     accuracy = 1.0E-20,
+                                     expansion=MAX_EXPANSION_LIMIT,
+                                     verbose=False)
+    return product_wf - exact_wf
+
+
 def deltadagdelta_action(work: fqe.Wavefunction,
                          t: float,
                          full_ham: RestrictedHamiltonian,
                          h0: RestrictedHamiltonian,
                          h1: RestrictedHamiltonian,
-                         suzuki_order='4'):
+                         suzuki_order=4):
     og_work = copy.deepcopy(work)
     w1 = exact_then_suzuki_u_inverse(work, t, full_ham, h0, h1, suzuki_order=suzuki_order) + \
         suzuki_u_then_exact_inverse(work, t, full_ham, h0, h1, suzuki_order=suzuki_order)

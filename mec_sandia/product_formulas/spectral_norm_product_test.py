@@ -16,6 +16,8 @@ from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
 
 from mec_sandia.product_formulas.pyscf_utility import get_spectrum, pyscf_to_fqe_wf
 from mec_sandia.product_formulas.systems.molecules import lih_molecule, heh_molecule
+from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_power_method as spectral_norm_power_method_cirq, spectral_norm_fqe_power_iteration
+from mec_sandia.product_formulas.strang import delta_action as delta_action_strang
 
 
 def power_method_test():
@@ -83,10 +85,57 @@ def test_cirq_spectral_norm():
     low_level_spectrum = sigma_true[:10]
     print(f"{low_level_spectrum=}")
 
-    from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_power_method as spectral_norm_power_method_cirq, spectral_norm_fqe_power_iteration
-    cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-10)
+    cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq, verbose=True, stop_eps=1.0E-14)
     print(f"{true_spectral_norm=}")
     print(f"{cirq_spectral_norm=}")
 
+def test_fqe_vs_cirq_spectral_norm():
+    # mol_mf = heh_molecule()
+    mol_mf = lih_molecule()
+    nelec = mol_mf.mol.nelectron
+    norb = mol_mf.mo_coeff.shape[0]
+    sz = 0
+    of_eris = mol_mf._eri.transpose((0, 2, 3, 1))
+    fqe_ham = integrals_to_fqe_restricted(mol_mf.get_hcore(), of_eris)    
+    fqe_ham_ob = RestrictedHamiltonian((mol_mf.get_hcore(), ))
+    fqe_ham_tb = RestrictedHamiltonian((np.zeros_like(mol_mf.get_hcore()), np.einsum('ijlk', -0.5 * of_eris)))
+    roots, wfns = get_spectrum(mol_mf, num_roots=1)
+    gs_e, gs_wfn = roots, pyscf_to_fqe_wf(wfns, pyscf_mf=mol_mf)
+    assert np.allclose(gs_e, gs_wfn.expectationValue(fqe_ham).real + mol_mf.energy_nuc())
+    assert np.allclose(gs_e, gs_wfn.expectationValue(fqe_ham_ob).real + gs_wfn.expectationValue(fqe_ham_tb).real + mol_mf.energy_nuc())
+
+    np.random.seed(50)
+    x_wfn = fqe.Wavefunction([[nelec, sz, norb]])
+    x_wfn.set_wfn(strategy='ones')
+    x_wfn.normalize()
+    x_cirq = fqe.to_cirq(x_wfn)
+
+    one_body_coefficients, two_body_coefficients = spinorb_from_spatial(mol_mf.get_hcore(), of_eris)
+    molecular_hamiltonian = InteractionOperator(0, one_body_coefficients, 1 / 2 * two_body_coefficients)
+    sparse_ham = of.get_sparse_operator(molecular_hamiltonian).todense()
+    molecular_hamiltonian_ob = InteractionOperator(0, one_body_coefficients, np.zeros_like(1 / 2 * two_body_coefficients))
+    molecular_hamiltonian_tb = InteractionOperator(0, np.zeros_like(one_body_coefficients), 1 / 2 * two_body_coefficients)
+
+    sparse_ham_ob = of.get_sparse_operator(molecular_hamiltonian_ob).todense()
+    sparse_ham_tb = of.get_sparse_operator(molecular_hamiltonian_tb).todense()
+
+    cirq_wf = fqe.to_cirq(gs_wfn).reshape((-1, 1))
+    cirq_e = (cirq_wf.conj().T @ sparse_ham @ cirq_wf + mol_mf.energy_nuc())[0, 0].real
+    assert np.allclose(cirq_e, gs_e)
+
+    t = 0.78
+    exact_u = expm(-1j * t * sparse_ham)
+    strang_u = expm(-1j * t * 0.5 * sparse_ham_ob) @ expm(-1j * t * 1 * sparse_ham_tb) @ expm(-1j * t * 0.5 * sparse_ham_ob)
+    diff_u = strang_u - exact_u
+    cirq_spectral_norm = spectral_norm_power_method_cirq(diff_u, x_cirq,  verbose=True, stop_eps=1.0E-14)
+    print(f"{cirq_spectral_norm=}")
+
+    fqe_spectral_norm = spectral_norm_fqe_power_iteration(work=x_wfn, t=t, full_ham=fqe_ham, h0=fqe_ham_ob, h1=fqe_ham_tb, delta_action=delta_action_strang,
+                                                          stop_eps=1.0E-14)
+    print(f"{cirq_spectral_norm=}")
+    print(f"{ fqe_spectral_norm=}")
+
+
 if __name__ == "__main__":
-    test_cirq_spectral_norm()
+    # test_cirq_spectral_norm()
+    test_fqe_vs_cirq_spectral_norm()
