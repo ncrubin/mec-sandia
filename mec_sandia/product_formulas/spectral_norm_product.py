@@ -1,10 +1,12 @@
 """
 Calculate the spectral norm of the difference between a product formula and the exact unitary.
 """
+from typing import Callable, Union
 import time
 import numpy as np
 import fqe
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
+from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 
 def spectral_norm_power_method(A, x, verbose=False, stop_eps=1.0E-8, return_vec=False):
     """
@@ -69,8 +71,8 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
                         t: float,
                         full_ham: RestrictedHamiltonian,
                         h0: RestrictedHamiltonian,
-                        h1: RestrictedHamiltonian,
-                        delta_action,
+                        h1: Union[RestrictedHamiltonian, DiagonalCoulomb],
+                        delta_action: Callable,
                         verbose=True,
                         stop_eps=1.0E-8) -> float:
     """Return spectral norm of the difference between product formula unitary and exact unitary
