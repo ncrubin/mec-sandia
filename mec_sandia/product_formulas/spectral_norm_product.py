@@ -90,7 +90,9 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
         start_time = time.time()
         work = delta_action(work, t, full_ham, h0, h1)
         spec_norm_estimate = work.norm()
-        work = delta_action(work, -t, full_ham, h0, h1)
+        work.scale(1./spec_norm_estimate) # .scale(spec_norm_estimate)
+        work = delta_action(work, -t, full_ham, h0, h1) # this will error out with non-normalized wavefunctions
+        work.scale(spec_norm_estimate) # cancels the 1./spec norm from 2 lines ago
         rnorm = work.norm()
         work.scale(1./rnorm)
         end_time = time.time()

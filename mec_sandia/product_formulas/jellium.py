@@ -87,12 +87,14 @@ def small_system():
         cirq_spectral_norms.append(cirq_spectral_norm)
         print(f"{cirq_spectral_norm=}")
 
-        # compute spectral norm
+        # # compute spectral norm
         fqe_spectral_norm = spectral_norm_fqe_power_iteration(x_wfn, t, fqe_ham, fqe_ham_ob, fqe_ham_tb, 
                                                     berry_delta_action,
                                                     verbose=True, stop_eps=1.0E-14)
         berry_spectral_norms.append(fqe_spectral_norm)
+        print(f"{cirq_spectral_norm=}")
         print(f"{ fqe_spectral_norm=}")
+        exit()
 
 
     np.save("berry_spectral_norms", berry_spectral_norms)
