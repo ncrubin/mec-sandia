@@ -10,6 +10,8 @@ from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
 
 MAX_EXPANSION_LIMIT = 200
+NORM_ERROR_RESOLUTION = 1.0E-13
+
 
 def strang_u(work: fqe.Wavefunction, t: float, fqe_ham_ob: RestrictedHamiltonian, fqe_ham_tb: Union[RestrictedHamiltonian, DiagonalCoulomb] ):
     """Strang split-operator evolution"""
@@ -90,8 +92,8 @@ def delta_action(work: fqe.Wavefunction,
                  t: float,
                  full_ham: RestrictedHamiltonian,
                  h0: RestrictedHamiltonian,
-                 h1: RestrictedHamiltonian):
-    if work.norm() - 1. > 1.0E-14:
+                 h1: Union[RestrictedHamiltonian, DiagonalCoulomb]):
+    if work.norm() - 1. > NORM_ERROR_RESOLUTION:
         print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
         raise RuntimeError("Input wavefunction wrong norm")
 
@@ -101,7 +103,7 @@ def delta_action(work: fqe.Wavefunction,
 
     print("Strang u time ", end_time - start_time)
 
-    if product_wf.norm() - 1. > 1.0E-14:
+    if product_wf.norm() - 1. >  NORM_ERROR_RESOLUTION:
         print(f"{product_wf.norm()=}", f"{(product_wf.norm() - 1.)=}")
         raise RuntimeError("Evolution did not converge")
     
