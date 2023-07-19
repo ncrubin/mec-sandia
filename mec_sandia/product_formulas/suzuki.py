@@ -119,12 +119,29 @@ def suzuki_u_then_exact_inverse(work: fqe.Wavefunction,
 
     return work
 
+def delta_action_4(work: fqe.Wavefunction,
+                   t: float,
+                   full_ham: RestrictedHamiltonian,
+                   h0: RestrictedHamiltonian,
+                   h1: RestrictedHamiltonian):
+    return delta_action(work, t, full_ham, h0, h1, suzuki_order=4)
+
+
+def delta_action_6(work: fqe.Wavefunction,
+                   t: float,
+                   full_ham: RestrictedHamiltonian,
+                   h0: RestrictedHamiltonian,
+                   h1: RestrictedHamiltonian):
+    return delta_action(work, t, full_ham, h0, h1, suzuki_order=6)
+
+
+
 def delta_action(work: fqe.Wavefunction,
                  t: float,
                  full_ham: RestrictedHamiltonian,
                  h0: RestrictedHamiltonian,
                  h1: RestrictedHamiltonian,
-                 suzuki_order='4'):
+                 suzuki_order=4):
 
     if suzuki_order == 4:
         product_wf = suzuki_trotter_fourth_order_u(work, t, h0, h1)
