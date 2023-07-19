@@ -54,3 +54,18 @@ def test_even_number_points():
     rsg = RealSpaceGrid(5, 4)
     u = rsg.fourier_transform_matrix()
     assert np.allclose(u.conj().T @ u, np.eye(4**3))
+
+def test_diagonal_coulomb_matrix():
+    rsg = RealSpaceGrid(5, 3)
+    eris = 2 * rsg.get_eris()
+    of_eris = eris.transpose((0, 2, 3, 1))
+    dc_mat = 2 * rsg.get_diagonal_coulomb_matrix()
+    for l, m in itertools.product(range(rsg.norb), repeat=2):
+        assert np.isclose(eris[l, l, m, m], dc_mat[l, m])
+
+    from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
+    tb_dc = DiagonalCoulomb(np.einsum('ijlk', -0.5 * of_eris))
+    tb_dc_v2 = DiagonalCoulomb(0.5 * dc_mat)
+    assert np.allclose(tb_dc._tensor[1], 0)
+    assert np.allclose(tb_dc._tensor[2], 0.5 * dc_mat)
+    assert np.allclose(tb_dc._tensor[2], tb_dc_v2._tensor[2])

@@ -93,6 +93,26 @@ class RealSpaceGrid:
 
         eris *= self.points_per_dim / (2 * self.L)
         return eris
+    
+    def get_diagonal_coulomb_matrix(self):
+        """
+        Get diagonal coulomb matrix specifying
+        V = sum_{rs}v_{rs}n_{r}n_{s}
+        The factor of 1/2 is ALREADY included in this
+        """
+        ijk_vals = self.get_miller()
+        norb = len(ijk_vals)
+        distance_mat = np.zeros((norb, norb))
+        for l, m in itertools.product(range(len(ijk_vals)), repeat=2):
+            distance_mat[l, m] = np.linalg.norm(ijk_vals[l] - ijk_vals[m])
+        distance_mat = np.reciprocal(distance_mat, 
+                                     out=np.zeros_like(distance_mat), 
+                                     where=~np.isclose(distance_mat, 
+                                                       np.zeros_like(distance_mat)
+                                                       )
+        )
+        return distance_mat * self.points_per_dim / (2 * self.L)
+
 
     def fourier_transform_matrix(self):
         """position space to momentum space

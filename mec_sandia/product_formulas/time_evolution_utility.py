@@ -15,17 +15,21 @@ def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamilt
     for op_coeff_tensor in ops.iht(time):
         upper_bound_norm += np.sum(np.abs(op_coeff_tensor))
         norm_of_coeffs.append(np.linalg.norm(op_coeff_tensor))
+
     if upper_bound_norm >= smallest_time_slice:
         num_slices = int(np.ceil(upper_bound_norm / smallest_time_slice))
         time_evol = copy.deepcopy(base)
-        # print("Using {} slices to evolve for {} time".format(num_slices, time), norm_of_coeffs)
         if debug:
+            print("Using {} slices to evolve for {} time".format(num_slices, time), norm_of_coeffs)
             if time_evol.norm() - 1. > NORM_ERROR_RESOLUTION:
                 print("pre-slice-start", f"{time_evol.norm()=}", f"{(time_evol.norm() - 1.)=}")
                 raise RuntimeError("Evolution did not converge")
 
         total_time = 0
         for mm in range(num_slices):
+            if debug:
+                print("Slice ", f"{mm=}")
+
             time_evol = time_evol.apply_generated_unitary(
                 time=time / num_slices, algo=algo, ops=ops, accuracy=accuracy, expansion=expansion,
                                                 verbose=verbose
