@@ -5,6 +5,7 @@ import copy
 import numpy as np
 import fqe
 from fqe.hamiltonians import hamiltonian
+NORM_ERROR_RESOLUTION = 1.0E-13
 
 def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamiltonian.Hamiltonian, 
                           accuracy=1.0E-20, expansion=200, verbose=True,
@@ -19,7 +20,7 @@ def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamilt
         time_evol = copy.deepcopy(base)
         # print("Using {} slices to evolve for {} time".format(num_slices, time), norm_of_coeffs)
         if debug:
-            if time_evol.norm() - 1. > 1.0E-14:
+            if time_evol.norm() - 1. > NORM_ERROR_RESOLUTION:
                 print("pre-slice-start", f"{time_evol.norm()=}", f"{(time_evol.norm() - 1.)=}")
                 raise RuntimeError("Evolution did not converge")
 
@@ -31,7 +32,7 @@ def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamilt
                                                 )
             total_time += time / num_slices
             if debug:
-                if time_evol.norm() - 1. > 1.0E-14:
+                if time_evol.norm() - 1. > NORM_ERROR_RESOLUTION:
                     print(f"{mm=}", f"{time_evol.norm()=}", f"{(time_evol.norm() - 1.)=}")
                     raise RuntimeError("Evolution did not converge")
         if debug:
@@ -41,8 +42,8 @@ def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamilt
             time=time, algo=algo, ops=ops, accuracy=accuracy, expansion=expansion,
                                             verbose=verbose
                                             )
-    if time_evol.norm() - 1. > 1.0E-14:
-        print(f"{time_evol.norm()=}", f"{(time_evol.norm() - 1.)=}")
+    if time_evol.norm() - 1. > NORM_ERROR_RESOLUTION:
+        print(f"Post suceess run {time_evol.norm()=}", f"{(time_evol.norm() - 1.)=}")
         raise RuntimeError("Evolution did not converge")
     
     return time_evol
