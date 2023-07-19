@@ -45,9 +45,22 @@ def main():
     x_vals2 = np.logspace(np.log10(tvals)[0], np.log10(tvals)[-1], 50)
     y_vals2 = np.exp(params2[1]) * x_vals**params2[0]
 
-
+    # these values come from running on the cluster
+    snorms_fqe = np.array([4.436515185807131e-15,
+                  9.924663044973439e-14,
+                  1.6418447286775516e-09,
+                  1.9633942879556017e-07,
+                  2.122612369580926e-05,
+                  0.001692951612955967])
+    tvals_fqe = np.array([0.19952623149688797,
+                 0.3414548873833603,
+                 1.0,
+                 1.7113283041617808,
+                 2.9286445646252366,
+                 5.011872336272722])
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.loglog(tvals_fqe[::-1], snorms_fqe[::-1], color=colors[3], mfc='None', mec=colors[3], marker='o', markersize=10)
     # ax.loglog(tvals, berry_norms, color=colors[3], mfc='None', mec=colors[3], marker='o', linestyle='-', label='Berry-8')
     # ax.loglog(x_vals, y_vals, color=colors[3], linestyle='--', label=r"$\mathcal{{O}}(t^{{{:2.2f}}})$".format(params[0]))
     ax.loglog(tvals, cirq_norms, color=colors[2], mfc='None', mec=colors[2], marker='o', linestyle='-', label='Cirq-Berry-8')

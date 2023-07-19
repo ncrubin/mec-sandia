@@ -79,7 +79,13 @@ def delta_action(work: fqe.Wavefunction,
                  full_ham: RestrictedHamiltonian,
                  h0: RestrictedHamiltonian,
                  h1: RestrictedHamiltonian):
-    product_wf = strang_u(work, t, h0, h1)
+    if work.norm() - 1. > 1.0E-14:
+        print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
+        raise RuntimeError("Input wavefunction wrong norm")
+    product_wf = strang_u(copy.deepcopy(work), t, h0, h1)
+    if product_wf.norm() - 1. > 1.0E-14:
+        print(f"{product_wf.norm()=}", f"{(product_wf.norm() - 1.)=}")
+        raise RuntimeError("Evolution did not converge")
     exact_wf = apply_unitary_wrapper(base=work,
                                      time=t,
                                      algo='taylor',
