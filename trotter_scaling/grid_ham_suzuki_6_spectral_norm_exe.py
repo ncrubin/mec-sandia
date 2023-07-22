@@ -15,7 +15,7 @@ from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 
 from mec_sandia.product_formulas.systems.real_space_grid import RealSpaceGrid
 from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_fqe_power_iteration
-from mec_sandia.product_formulas.suzuki import delta_action_4 as delta_action
+from mec_sandia.product_formulas.suzuki import delta_action_6 as delta_action
 
 
 def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float):
@@ -60,7 +60,7 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
                                                       delta_action=delta_action,
                                                       verbose=True,
                                                       stop_eps=0.5E-5)
-    np.save("spectral_norm_suzuki_4.npy", np.array(spectral_norm))
+    np.save("spectral_norm_suzuki_6.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
     t = float(sys.argv[1])

@@ -15,7 +15,7 @@ from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 
 from mec_sandia.product_formulas.systems.real_space_grid import RealSpaceGrid
 from mec_sandia.product_formulas.spectral_norm_product import spectral_norm_fqe_power_iteration
-from mec_sandia.product_formulas.suzuki import delta_action_4 as delta_action
+from mec_sandia.product_formulas.bespoke_berry import berry_delta_action as delta_action
 
 
 def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float):
@@ -37,7 +37,6 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
     # fqe_ham_tb_rh = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
     fqe_ham_tb = DiagonalCoulomb(0.5 * dc_mat)
 
-
     # initialize new wavefunction
     if norb == 64:
         fqe.settings.use_accelerated_code = False
@@ -46,11 +45,11 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
     x_wfn = fqe.Wavefunction([[nelec, sz, norb]])
     if norb == 64:
         fqe.settings.use_accelerated_code = True
-    
+
     x_wfn.set_wfn(strategy='ones')
     x_wfn.normalize()
     print(x_wfn.norm() - 1.)
-
+    
     # calculate spectral norm
     spectral_norm = spectral_norm_fqe_power_iteration(work=x_wfn,
                                                       t=t,
@@ -60,7 +59,7 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
                                                       delta_action=delta_action,
                                                       verbose=True,
                                                       stop_eps=0.5E-5)
-    np.save("spectral_norm_suzuki_4.npy", np.array(spectral_norm))
+    np.save("spectral_norm_berry_8.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
     t = float(sys.argv[1])

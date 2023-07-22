@@ -1,16 +1,16 @@
-import os
-os.environ['OMP_NUM_THREADS'] = '6'
-os.environ['MKL_NUM_THREADS'] = '6'
-
 import copy
 import numpy as np
+import time
 
 import fqe
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
+from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 
 from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
 
 MAX_EXPANSION_LIMIT = 200
+NORM_ERROR_RESOLUTION = 1.0E-12
+
 
 def u_s2_trotter_cirq(t: float,
                       h0,
@@ -51,29 +51,19 @@ def evolve_s2_trotter(work: fqe.Wavefunction,
                       h1: RestrictedHamiltonian):
     assert h0.quadratic() == True
     work = work.time_evolve(t * 0.5, h0) # this should be exact
-    # work = apply_unitary_wrapper(base=work,
-    #                              time=t * 0.5,
-    #                              algo='taylor',
-    #                              ops=h0,
-    #                              accuracy=1.0E-20,
-    #                              expansion=MAX_EXPANSION_LIMIT,
-    #                              verbose=False)
-
-    work = apply_unitary_wrapper(base=work,
-                                 time=t,
-                                 algo='taylor',
-                                 ops=h1,
-                                 accuracy=1.0E-20,
-                                 expansion=MAX_EXPANSION_LIMIT,
-                                 verbose=False)
+    if isinstance(h1, DiagonalCoulomb):
+        work = work.time_evolve(t, h1)
+    elif isinstance(h1, RestrictedHamiltonian):
+        work = apply_unitary_wrapper(base=work,
+                                     time=t,
+                                     algo='taylor',
+                                     ops=h1,
+                                     accuracy=1.0E-20,
+                                     expansion=MAX_EXPANSION_LIMIT,
+                                     verbose=False)
+    else:
+        raise TypeError("The two-body Hamiltonian does not have an allowed type {}".format(type(h1)))
     work = work.time_evolve(t * 0.5, h0)
-    # work = apply_unitary_wrapper(base=work,
-    #                              time=t * 0.5,
-    #                              algo='taylor',
-    #                              ops=h0,
-    #                              accuracy=1.0E-20,
-    #                              expansion=MAX_EXPANSION_LIMIT,
-    #                              verbose=False)
     return work
 
 def berry_bespoke(work: fqe.Wavefunction,
@@ -138,7 +128,21 @@ def berry_delta_action(work: fqe.Wavefunction,
                        full_ham: RestrictedHamiltonian,
                        h0: RestrictedHamiltonian,
                        h1: RestrictedHamiltonian):
+    
+    if work.norm() - 1. > NORM_ERROR_RESOLUTION:
+        print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
+        raise RuntimeError("Input wavefunction wrong norm")
+
+    start_time = time.time()
     product_wf = berry_bespoke(work, t, h0, h1)
+    end_time = time.time()
+    print("Berry-8 u time ", end_time - start_time)
+
+    if product_wf.norm() - 1. >  NORM_ERROR_RESOLUTION:
+        print(f"{product_wf.norm()=}", f"{(product_wf.norm() - 1.)=}")
+        raise RuntimeError("Evolution did not converge")
+
+    start_time = time.time()
     exact_wf = apply_unitary_wrapper(base=work,
                                      time=t,
                                      algo='taylor',
@@ -146,6 +150,9 @@ def berry_delta_action(work: fqe.Wavefunction,
                                      accuracy = 1.0E-20,
                                      expansion=MAX_EXPANSION_LIMIT,
                                      verbose=False)
+    end_time = time.time()
+    print("exact u time ", end_time - start_time)
+
     return product_wf - exact_wf
 
 def berry_deltadagdelta_action(work: fqe.Wavefunction,

@@ -1,10 +1,15 @@
 """Get the Jellium Hamiltonian as an FQE-Hamiltonian"""
 import copy
+import time
+
 import fqe
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
+from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
+
 from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
 
 MAX_EXPANSION_LIMIT = 200
+NORM_ERROR_RESOLUTION = 1.0E-12
 
 
 def suzuki_trotter_fourth_order_u(work: fqe.Wavefunction, t: float, h0: RestrictedHamiltonian, h1: RestrictedHamiltonian ):
@@ -30,13 +35,16 @@ def suzuki_trotter_fourth_order_u(work: fqe.Wavefunction, t: float, h0: Restrict
         if indices[ii] == 0:
             work = work.time_evolve(t * coeffs[ii], h0)
         elif indices[ii] == 1:
-            work = apply_unitary_wrapper(base=work,
-                                         time=t * coeffs[ii],
-                                         algo='taylor',
-                                         ops=h1,
-                                         accuracy=1.0E-20,
-                                         expansion=MAX_EXPANSION_LIMIT,
-                                         verbose=False)
+            if isinstance(h1, DiagonalCoulomb):
+                work = work.time_evolve(t * coeffs[ii], h1)
+            elif isinstance(h1, RestrictedHamiltonian):
+                work = apply_unitary_wrapper(base=work,
+                                             time=t * coeffs[ii],
+                                             algo='taylor',
+                                             ops=h1,
+                                             accuracy=1.0E-20,
+                                             expansion=MAX_EXPANSION_LIMIT,
+                                             verbose=False)
         else:
             raise ValueError("The impossible has happened")
     return work
@@ -66,13 +74,16 @@ def suzuki_trotter_sixth_order_u(work: fqe.Wavefunction, t: float, h0: Restricte
         if indices[ii] == 0:
             work = work.time_evolve(t * coeffs[ii], h0)
         elif indices[ii] == 1:
-            work = apply_unitary_wrapper(base=work,
-                                         time=t * coeffs[ii],
-                                         algo='taylor',
-                                         ops=h1,
-                                         accuracy=1.0E-20,
-                                         expansion=MAX_EXPANSION_LIMIT,
-                                         verbose=False)
+            if isinstance(h1, DiagonalCoulomb):
+                work = work.time_evolve(t * coeffs[ii], h1)
+            elif isinstance(h1, RestrictedHamiltonian):
+                work = apply_unitary_wrapper(base=work,
+                                             time=t * coeffs[ii],
+                                             algo='taylor',
+                                             ops=h1,
+                                             accuracy=1.0E-20,
+                                             expansion=MAX_EXPANSION_LIMIT,
+                                             verbose=False)
         else:
             raise ValueError("The impossible has happened")
     return work
@@ -143,19 +154,32 @@ def delta_action(work: fqe.Wavefunction,
                  h1: RestrictedHamiltonian,
                  suzuki_order=4):
 
+    if work.norm() - 1. > NORM_ERROR_RESOLUTION:
+        print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
+        raise RuntimeError("Input wavefunction wrong norm")
+
+    start_time = time.time()
     if suzuki_order == 4:
         product_wf = suzuki_trotter_fourth_order_u(work, t, h0, h1)
     elif suzuki_order == 6:
         product_wf = suzuki_trotter_sixth_order_u(work, t, h0, h1)
     else:
         raise ValueError("Suzuki Order {} not coded".format(suzuki_order))
+    end_time = time.time()
+    print("Suzuki u time ", end_time - start_time)
+
+    start_time = time.time()
     exact_wf = apply_unitary_wrapper(base=work,
                                      time=t,
                                      algo='taylor',
                                      ops=full_ham,
                                      accuracy = 1.0E-20,
                                      expansion=MAX_EXPANSION_LIMIT,
-                                     verbose=False)
+                                     verbose=False,
+                                     debug=False)
+    end_time = time.time()
+    print("exact u time ", end_time - start_time)
+
     return product_wf - exact_wf
 
 
