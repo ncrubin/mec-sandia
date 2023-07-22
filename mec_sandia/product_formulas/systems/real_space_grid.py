@@ -40,6 +40,10 @@ class RealSpaceGrid:
         self.kfac = 2 * math.pi / self.L
         self.miller_vals = None
         self.norb = points_per_dim**3
+        self.eris = None
+        self.dc_mat = None
+        self.kh1 = None
+        self.rh1 = None
 
     def get_miller(self):
         if self.miller_vals is not None:
@@ -76,6 +80,8 @@ class RealSpaceGrid:
         Return Chemist ordered ERIs (1'1|2'2)
         The factor of 1/2 is ALREADY included in this
         """
+        if self.eris is not None:
+            return self.eris
         ijk_vals = self.get_miller()
         norb = len(ijk_vals)
         eris = np.zeros(4 * (norb,))
@@ -92,6 +98,7 @@ class RealSpaceGrid:
             eris[l, l, m, m] = distance_mat[l, m]
 
         eris *= self.points_per_dim / (2 * self.L)
+        self.eris = eris
         return eris
     
     def get_diagonal_coulomb_matrix(self):
@@ -100,6 +107,8 @@ class RealSpaceGrid:
         V = sum_{rs}v_{rs}n_{r}n_{s}
         The factor of 1/2 is ALREADY included in this
         """
+        if self.dc_mat is not None:
+            return self.dc_mat
         ijk_vals = self.get_miller()
         norb = len(ijk_vals)
         distance_mat = np.zeros((norb, norb))
@@ -111,8 +120,8 @@ class RealSpaceGrid:
                                                        np.zeros_like(distance_mat)
                                                        )
         )
-        return distance_mat * self.points_per_dim / (2 * self.L)
-
+        self.dc_mat = distance_mat * self.points_per_dim / (2 * self.L)
+        return self.dc_mat
 
     def fourier_transform_matrix(self):
         """position space to momentum space
@@ -129,17 +138,23 @@ class RealSpaceGrid:
         Generate diagonal kinetic energy term and then compute the inverse 
         fourier transform 
         """
+        if self.kh1 is not None:
+            return self.kh1
         knu = self.get_momentum_space_grid()
-        return 0.5 * np.einsum('ix,ix->i', knu, knu)
+        self.kh1 = 0.5 * np.einsum('ix,ix->i', knu, knu)
+        return self.kh1
 
     def get_rspace_h1(self,):
         # recall |r> = U_ft^{dag}|k>
-        diag_k_space_h1 = np.diag(self.get_kspace_h1())
+        if self.rh1 is not None:
+            return self.rh1
+        # diag_k_space_h1 = np.diag(self.get_kspace_h1())
         u_ft = self.fourier_transform_matrix()
-        return u_ft.conj().T @ diag_k_space_h1 @ u_ft
-        # return np.einsum('ix,x,xj->ij', u_ft.conj().T, self.get_kspace_h1(), u_ft)
+        # self.rh1 = u_ft.conj().T @ diag_k_space_h1 @ u_ft
+        # return self.rh1
+        self.rh1 = np.einsum('ix,x,xj->ij', u_ft.conj().T, self.get_kspace_h1(), u_ft, optimize=True)
+        return self.rh1
        
-
 if __name__ == "__main__":
     rsg = RealSpaceGrid(5, 4)
     u = rsg.fourier_transform_matrix()

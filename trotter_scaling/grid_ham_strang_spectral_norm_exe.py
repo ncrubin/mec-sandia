@@ -2,7 +2,8 @@
 Grid Hamiltonian spectral norm computation executable
 """
 import os
-os.environ['MKL_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '8'
+os.environ['OMP_NUM_THREADS'] = '8'
 import sys
 import numpy as np
 
@@ -32,13 +33,24 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
 
     fqe_ham = integrals_to_fqe_restricted(h1, of_eris)    
     fqe_ham_ob = RestrictedHamiltonian((h1,))
-    fqe_ham_tb = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
-    # fqe_ham_tb = DiagonalCoulomb(0.5 * dc_mat)
+    # fqe_ham_tb = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
+    fqe_ham_tb = DiagonalCoulomb(0.5 * dc_mat)
 
      # initialize new wavefunction
+    fqe.settings.use_accelerated_code = True
     x_wfn = fqe.Wavefunction([[nelec, sz, norb]])
     x_wfn.set_wfn(strategy='ones')
     x_wfn.normalize()
+    print(x_wfn.sector((nelec, sz)).coeff.shape)
+    print(x_wfn.sector((nelec, sz)).coeff.nbytes / 1000**3)
+
+    diag, vij = fqe_ham_tb.iht(t)
+
+    work = x_wfn._evolve_diagonal_coulomb_inplace(diag, vij)
+    # work = x_wfn.time_evolve(t, fqe_ham_tb)
+
+    new_wfn = delta_action(x_wfn, t, full_ham=fqe_ham, h0=fqe_ham_ob, h1=fqe_ham_tb)
+    exit(0)
 
     # calculate spectral norm
     spectral_norm = spectral_norm_fqe_power_iteration(work=x_wfn,
@@ -52,8 +64,9 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
     np.save("spectral_norm.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
-    t = float(sys.argv[1])
-    ppd = int(sys.argv[2])
-    eta = int(sys.argv[3])
-    omega = float(sys.argv[4])
+    # 0.65 3 4 5.0
+    t = 0.65 # float(sys.argv[1])
+    ppd = 3 # int(sys.argv[2])
+    eta = 2 # int(sys.argv[3])
+    omega = 5. # float(sys.argv[4])
     run_spectral_norm_comp(t, ppd, eta, omega)
