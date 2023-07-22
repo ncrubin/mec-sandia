@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import fqe
 from fqe.hamiltonians import hamiltonian
-NORM_ERROR_RESOLUTION = 1.0E-13
+NORM_ERROR_RESOLUTION = 1.0E-12
 
 def apply_unitary_wrapper(base: fqe.Wavefunction, time: float, algo, ops: hamiltonian.Hamiltonian, 
                           accuracy=1.0E-20, expansion=200, verbose=True,

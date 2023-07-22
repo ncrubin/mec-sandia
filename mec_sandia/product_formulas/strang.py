@@ -10,7 +10,7 @@ from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
 
 MAX_EXPANSION_LIMIT = 200
-NORM_ERROR_RESOLUTION = 1.0E-13
+NORM_ERROR_RESOLUTION = 1.0E-12
 
 
 def strang_u(work: fqe.Wavefunction, t: float, fqe_ham_ob: RestrictedHamiltonian, fqe_ham_tb: Union[RestrictedHamiltonian, DiagonalCoulomb] ):

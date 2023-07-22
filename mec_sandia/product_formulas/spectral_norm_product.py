@@ -87,7 +87,6 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
     prev_spec_norm_estimate = np.inf
     delta_spec_norm_estimate = np.inf
     iter_val = 0
-    work.normalize()
     while delta_spec_norm_estimate > stop_eps:
         start_time = time.time()
         work = delta_action(work, t, full_ham, h0, h1)
