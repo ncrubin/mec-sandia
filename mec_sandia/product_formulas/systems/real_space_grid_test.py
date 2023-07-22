@@ -69,3 +69,22 @@ def test_diagonal_coulomb_matrix():
     assert np.allclose(tb_dc._tensor[1], 0)
     assert np.allclose(tb_dc._tensor[2], 0.5 * dc_mat)
     assert np.allclose(tb_dc._tensor[2], tb_dc_v2._tensor[2])
+
+def test_real_space_h1():
+    rsg = RealSpaceGrid(5, 11)
+    diag_k_space_h1 = np.diag(rsg.get_kspace_h1())
+    import time
+    start_time = time.time()
+    u_ft = rsg.fourier_transform_matrix()
+    test_rh1 = np.einsum('ix,x,xj->ij', u_ft.conj().T, rsg.get_kspace_h1(), u_ft, optimize=True)
+    end_time = time.time()
+    print("einsum_time ", end_time - start_time)
+
+    assert np.allclose(test_rh1, u_ft.conj().T @ diag_k_space_h1 @ u_ft)
+
+    start_time = time.time()
+    rh1 = rsg.get_rspace_h1() 
+    end_time = time.time()
+    print("matmul_time ", end_time - start_time)
+    assert np.allclose(test_rh1, rh1)
+    print("PASSED TEST")
