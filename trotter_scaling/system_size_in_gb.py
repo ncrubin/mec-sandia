@@ -22,9 +22,10 @@ if __name__ == "__main__":
             memory_requirements = hilbert_space_size * 16 / (1024**3)  # 1st division bytes -> kilobytes, 2nd division kilobytes -> megabytes, 3rd division megabytes -> gigabytes
 
             # calculate tau and nu
-            rsg = RealSpaceGrid(5., ppd[idx])
+            rsg = RealSpaceGrid(1., ppd[idx])
             tau_norm = compute_tau_norm(rsg)
             nu_norm = compute_nu_eta_norm(rsg, eta_val)
+            
             tau_norm_ncr = np.max(rsg.get_kspace_h1())
             dominic_tau = 3 * ((4 * np.pi**2) / (2 * rsg.L**2)) * ((ppd[idx] - 1) / 2)**2
             # print(f"{N_id:>4} & {eta_val:>4}", "\t", " & {: 3.3e} & {: 3.3e} & {: 3.7f} & {: 3.7} & {: 3.7f} \\\ ".format(hilbert_space_size, memory_requirements, tau_norm, dominic_tau, tau_norm_ncr))
