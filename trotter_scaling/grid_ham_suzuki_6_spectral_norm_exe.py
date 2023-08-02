@@ -34,37 +34,57 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
 
     fqe_ham = integrals_to_fqe_restricted(h1, of_eris)
     fqe_ham_ob = RestrictedHamiltonian((h1,))
-    # fqe_ham_tb_rh = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
+    fqe_ham_tb_rh = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
     fqe_ham_tb = DiagonalCoulomb(0.5 * dc_mat)
 
 
     # initialize new wavefunction
-    if norb == 64:
-        fqe.settings.use_accelerated_code = False
-    else:
-        fqe.settings.use_accelerated_code = True
+    fqe.settings.use_accelerated_code = True
     x_wfn = fqe.Wavefunction([[nelec, sz, norb]])
-    if norb == 64:
-        fqe.settings.use_accelerated_code = True
-    
     x_wfn.set_wfn(strategy='ones')
     x_wfn.normalize()
     print(x_wfn.norm() - 1.)
 
     # calculate spectral norm
-    spectral_norm = spectral_norm_fqe_power_iteration(work=x_wfn,
+    apply_generated_unitary_kwargs = {"smallest_time_slice": 10, "verbose": True, "debug": True}
+    import time
+    start_time = time.time()
+    spectral_norm1 = spectral_norm_fqe_power_iteration(work=x_wfn,
+                                                      t=t,
+                                                      full_ham=fqe_ham,
+                                                      h0=fqe_ham_ob,
+                                                      h1=fqe_ham_tb_rh,
+                                                      delta_action=delta_action,
+                                                      delta_action_kwargs=apply_generated_unitary_kwargs,
+                                                      stop_eps=1.0E-3,
+                                                      verbose=True,
+                                                      )
+    end_time = time.time()
+    specnorm1_time = end_time - start_time
+
+    start_time = time.time() 
+    spectral_norm2 = spectral_norm_fqe_power_iteration(work=x_wfn,
                                                       t=t,
                                                       full_ham=fqe_ham,
                                                       h0=fqe_ham_ob,
                                                       h1=fqe_ham_tb,
                                                       delta_action=delta_action,
+                                                      delta_action_kwargs=apply_generated_unitary_kwargs,
                                                       verbose=True,
-                                                      stop_eps=0.5E-5)
+                                                      stop_eps=1.0E-3)
+    end_time = time.time()
+    specnorm2_time = end_time - start_time
+    print(f"{spectral_norm1=}")
+    print(f"{spectral_norm2=}")
+    print(f"{specnorm1_time=}")
+    print(f"{specnorm2_time=}")
+
+    exit()
     np.save("spectral_norm_suzuki_6.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
-    t = float(sys.argv[1])
-    ppd = int(sys.argv[2])
-    eta = int(sys.argv[3])
-    omega = float(sys.argv[4])
+    t = 0.65 # float(sys.argv[1])
+    ppd = 2 # int(sys.argv[2])
+    eta = 3 # int(sys.argv[3])
+    omega = 5. # float(sys.argv[4])
     run_spectral_norm_comp(t, ppd, eta, omega)

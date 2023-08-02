@@ -73,8 +73,10 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
                         h0: RestrictedHamiltonian,
                         h1: Union[RestrictedHamiltonian, DiagonalCoulomb],
                         delta_action: Callable,
+                        delta_action_kwargs: dict,
                         verbose=True,
-                        stop_eps=1.0E-8) -> float:
+                        stop_eps=1.0E-8,
+                        ) -> float:
     """Return spectral norm of the difference between product formula unitary and exact unitary
     ||U_{p} - U_{exact}|| 
 
@@ -89,10 +91,10 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
     iter_val = 0
     while delta_spec_norm_estimate > stop_eps:
         start_time = time.time()
-        work = delta_action(work, t, full_ham, h0, h1)
+        work = delta_action(work, t, full_ham, h0, h1, **delta_action_kwargs)
         spec_norm_estimate = work.norm()
         work.scale(1./spec_norm_estimate) # .scale(spec_norm_estimate)
-        work = delta_action(work, -t, full_ham, h0, h1) # this will error out with non-normalized wavefunctions
+        work = delta_action(work, -t, full_ham, h0, h1, **delta_action_kwargs) # this will error out with non-normalized wavefunctions
         work.scale(spec_norm_estimate) # cancels the 1./spec norm from 2 lines ago
         rnorm = work.norm()
         work.scale(1./rnorm)

@@ -66,7 +66,7 @@ def main():
     # Shrink cell
     #
     #########################
-    cut_len = 0.95
+    cut_len = 0.25
     positions = ase_atom.get_scaled_positions()
     mask = [any(pos > cut_len) for pos in positions]
     new_positions = numpy.asarray(

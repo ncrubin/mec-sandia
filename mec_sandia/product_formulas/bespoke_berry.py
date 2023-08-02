@@ -6,10 +6,10 @@ import fqe
 from fqe.hamiltonians.restricted_hamiltonian import RestrictedHamiltonian
 from fqe.hamiltonians.diagonal_coulomb import DiagonalCoulomb
 
-from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper
+from mec_sandia.product_formulas.time_evolution_utility import apply_unitary_wrapper, quad_and_diag_coulomb_apply_unitary_wrapper
 
 MAX_EXPANSION_LIMIT = 200
-NORM_ERROR_RESOLUTION = 1.0E-12
+NORM_ERROR_RESOLUTION = 1.0E-10
 
 
 def u_s2_trotter_cirq(t: float,
@@ -127,7 +127,9 @@ def berry_delta_action(work: fqe.Wavefunction,
                        t: float,
                        full_ham: RestrictedHamiltonian,
                        h0: RestrictedHamiltonian,
-                       h1: RestrictedHamiltonian):
+                       h1: RestrictedHamiltonian,
+                       **apply_unitary_kwargs
+                       ):
     
     if work.norm() - 1. > NORM_ERROR_RESOLUTION:
         print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
@@ -143,13 +145,24 @@ def berry_delta_action(work: fqe.Wavefunction,
         raise RuntimeError("Evolution did not converge")
 
     start_time = time.time()
-    exact_wf = apply_unitary_wrapper(base=work,
-                                     time=t,
-                                     algo='taylor',
-                                     ops=full_ham,
-                                     accuracy = 1.0E-20,
-                                     expansion=MAX_EXPANSION_LIMIT,
-                                     verbose=False)
+    if h0.quadratic() and isinstance(h1, DiagonalCoulomb):
+        exact_wf = quad_and_diag_coulomb_apply_unitary_wrapper(base=work,
+                                         time=t,
+                                         algo='taylor',
+                                         quad_ham=h0,
+                                         diag_coulomb=h1,
+                                         accuracy = 1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         **apply_unitary_kwargs
+                                         )
+    else:
+        exact_wf = apply_unitary_wrapper(base=work,
+                                         time=t,
+                                         algo='taylor',
+                                         ops=full_ham,
+                                         accuracy = 1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         **apply_unitary_kwargs)
     end_time = time.time()
     print("exact u time ", end_time - start_time)
 

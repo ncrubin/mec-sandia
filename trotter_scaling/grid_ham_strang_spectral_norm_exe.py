@@ -2,8 +2,8 @@
 Grid Hamiltonian spectral norm computation executable
 """
 import os
-os.environ['MKL_NUM_THREADS'] = '8'
-os.environ['OMP_NUM_THREADS'] = '8'
+os.environ['MKL_NUM_THREADS'] = '6'
+os.environ['OMP_NUM_THREADS'] = '6'
 import sys
 import numpy as np
 
@@ -33,7 +33,7 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
 
     fqe_ham = integrals_to_fqe_restricted(h1, of_eris)    
     fqe_ham_ob = RestrictedHamiltonian((h1,))
-    # fqe_ham_tb = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
+    fqe_ham_tb_rh = RestrictedHamiltonian((np.zeros_like(h1), np.einsum('ijlk', -0.5 * of_eris)))
     fqe_ham_tb = DiagonalCoulomb(0.5 * dc_mat)
 
      # initialize new wavefunction
@@ -43,30 +43,61 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
     x_wfn.normalize()
     print(x_wfn.sector((nelec, sz)).coeff.shape)
     print(x_wfn.sector((nelec, sz)).coeff.nbytes / 1000**3)
+    print(x_wfn.norm() - 1.0)
 
-    diag, vij = fqe_ham_tb.iht(t)
 
-    work = x_wfn._evolve_diagonal_coulomb_inplace(diag, vij)
+    # diag, vij = fqe_ham_tb.iht(t)
+    # work = x_wfn._evolve_diagonal_coulomb_inplace(diag, vij)
     # work = x_wfn.time_evolve(t, fqe_ham_tb)
 
-    new_wfn = delta_action(x_wfn, t, full_ham=fqe_ham, h0=fqe_ham_ob, h1=fqe_ham_tb)
-    exit(0)
+    apply_generated_unitary_kwargs = {"smallest_time_slice": 300, "verbose": True, "debug": True}
+    # new_wfn_1 = delta_action(x_wfn, t, full_ham=fqe_ham, h0=fqe_ham_ob, h1=fqe_ham_tb, **apply_generated_unitary_kwargs)
+    # print("FINISHED DIAGCOULOMB delta-action")
+    # new_wfn_2 = delta_action(x_wfn, t, full_ham=fqe_ham, h0=fqe_ham_ob, h1=fqe_ham_tb_rh, **apply_generated_unitary_kwargs)
+    # print("FINISHED RestrictedHamiltonian delta-action")
+    # print(np.linalg.norm(new_wfn_1.sector((nelec, sz)).coeff - new_wfn_2.sector((nelec, sz)).coeff))
+    # exit()
 
     # calculate spectral norm
-    spectral_norm = spectral_norm_fqe_power_iteration(work=x_wfn,
+    import time
+    # start_time = time.time()
+    # spectral_norm1 = spectral_norm_fqe_power_iteration(work=x_wfn,
+    #                                                   t=t,
+    #                                                   full_ham=fqe_ham,
+    #                                                   h0=fqe_ham_ob,
+    #                                                   h1=fqe_ham_tb_rh,
+    #                                                   delta_action=delta_action,
+    #                                                   delta_action_kwargs=apply_generated_unitary_kwargs,
+    #                                                   stop_eps=1.0E-3,
+    #                                                   verbose=True,
+    #                                                   )
+    # end_time = time.time()
+    # specnorm1_time = end_time - start_time
+
+    start_time = time.time() 
+    spectral_norm2 = spectral_norm_fqe_power_iteration(work=x_wfn,
                                                       t=t,
                                                       full_ham=fqe_ham,
                                                       h0=fqe_ham_ob,
                                                       h1=fqe_ham_tb,
                                                       delta_action=delta_action,
+                                                      delta_action_kwargs=apply_generated_unitary_kwargs,
                                                       verbose=True,
-                                                      stop_eps=1.0E-10)
+                                                      stop_eps=1.0E-3)
+    end_time = time.time()
+    specnorm2_time = end_time - start_time
+    # print(f"{spectral_norm1=}")
+    print(f"{spectral_norm2=}")
+    # print(f"{specnorm1_time=}")
+    print(f"{specnorm2_time=}")
+    exit()
+
     np.save("spectral_norm.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
     # 0.65 3 4 5.0
     t = 0.65 # float(sys.argv[1])
-    ppd = 3 # int(sys.argv[2])
-    eta = 2 # int(sys.argv[3])
+    ppd = 4 # int(sys.argv[2])
+    eta = 4 # int(sys.argv[3])
     omega = 5. # float(sys.argv[4])
     run_spectral_norm_comp(t, ppd, eta, omega)

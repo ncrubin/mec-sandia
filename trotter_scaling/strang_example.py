@@ -44,6 +44,7 @@ def run_spectral_norm_comp(t: float, points_per_dim: int, eta: int, omega: float
                                                       delta_action=delta_action,
                                                       verbose=True,
                                                       stop_eps=1.0E-10)
+    exit()
     np.save("spectral_norm.npy", np.array(spectral_norm))
 
 if __name__ == "__main__":
