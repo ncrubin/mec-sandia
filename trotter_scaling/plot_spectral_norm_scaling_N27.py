@@ -161,6 +161,8 @@ if __name__ == "__main__":
     ax[1, 1].legend(fontsize=12, ncol=1, frameon=False)
     plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
     plt.savefig("delta_spectral_norms_grid_scaling_N27.png", dpi=300, format='PNG')
+    plt.savefig("delta_spectral_norms_grid_scaling_N27.pdf", dpi=300, format='PDF')
+
 
 
 
@@ -211,6 +213,9 @@ if __name__ == "__main__":
     ax[1, 1].plot(eta, berry_8_constant_factors, color=colors[3], marker='o', linestyle='None', label='$p^{*}=8, N=27$')
     ax[1, 1].set_xlabel(r"$\eta$", fontsize=14)
     ax[1, 1].legend(fontsize=12, ncol=1, frameon=False)
-    plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
+    ax[1, 1].ticklabel_format(axis='y', style='scientific', scilimits=(1,-1))
+    # plt.gcf().subplots_adjust(bottom=0.15, left=0.2)
     plt.savefig("delta_scaled_spectral_norm_grid_scaling_N27.png", dpi=300, format='PNG')
+    plt.savefig("delta_scaled_spectral_norm_grid_scaling_N27.pdf", dpi=300, format='PDF')
+
 

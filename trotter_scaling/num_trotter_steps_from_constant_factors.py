@@ -25,7 +25,7 @@ if __name__ == "__main__":
     omega = 2419.68282
     N = 53**3
     eta = 218
-    xi = 5.0E-10# E-5# E-5 # 2.5E-5 # pedro's Number
+    xi = 4.5E-8# E-5# E-5 # 2.5E-5 # pedro's Number 5.0E-10
     eps = 0.01
     dt = 10.
     print(f"{tau(N, eta, omega)=}")
@@ -38,10 +38,13 @@ if __name__ == "__main__":
     print(f"{xi**(1/8)=}")
     num_steps = np.ceil(num_trotter_steps(xi, tau_val, nu_val, eps, dt, 8, eta))
     print(f"{num_steps=}")
+    total_exponentials = 17 * num_steps
+    print(f"{total_exponentials=}")
     print("{: 2.3e}".format(compute_num_toffolis(num_steps, eta)))
     total_toffolis = compute_num_toffolis(num_steps, eta) # * 100 # x100 for sampling
     num_factories = 4
     print("num days ", total_toffolis * 2E-9 / num_factories) # roughly num_days based on Craigs / Matt's estimates
+    exit()
 
 
     # from mec_sandia.vasp_utils import read_vasp

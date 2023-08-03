@@ -86,7 +86,7 @@ def spectral_norm_fqe_power_iteration(work: fqe.Wavefunction,
     :param h0: the one-body (quadratic) part of the Hamiltonian
     :param h1: the two-body part of the Hamiltonian
     """
-    prev_spec_norm_estimate = np.inf
+    prev_spec_norm_estimate = 0 
     delta_spec_norm_estimate = np.inf
     iter_val = 0
     while delta_spec_norm_estimate > stop_eps:

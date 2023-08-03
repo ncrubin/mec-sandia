@@ -1,3 +1,4 @@
+from typing import Union
 import copy
 import numpy as np
 import time
@@ -73,12 +74,11 @@ def berry_bespoke(work: fqe.Wavefunction,
     """S2(w_10 t) S2(w_9 t) .... S2(w_2 t) S2(w_1 t) S2(w_0 t) S2(w_1 t) S2(w_2t) .... S2(w_9 t) S2(w_10 t)
     S2(t) =  exp(iAt/2) exp(iBt) exp(iAt/2)
     """
-    wvals = np.array([0.59358060400850625863463274318848,
-             -0.46916012347004197296246963141914, 0.27435664258984679072234958738716,
-              0.1719387948465677305996164814603, 0.23439874482541384415374265697566,
-             -0.48616424480326193899633138022874, 0.49617367388114660354885678908755,
-             -0.32660218948439130114486683568042, 0.23271679349369857679469542295681,
-              0.098249557414708533273496706507094])
+    wvals = np.array([0.59358060400850625863463274318848, -0.46916012347004197296246963141914, 
+                      0.27435664258984679072234958738716, 0.1719387948465677305996164814603, 
+                      0.23439874482541384415374265697566, -0.48616424480326193899633138022874, 
+                      0.49617367388114660354885678908755, -0.32660218948439130114486683568042, 
+                      0.23271679349369857679469542295681, 0.098249557414708533273496706507094])
     w_0 = 1. - 2. * np.sum(wvals) 
     for ii in range(9, -1, -1):
         work = evolve_s2_trotter(work, wvals[ii] * t, h0, h1)
@@ -86,6 +86,25 @@ def berry_bespoke(work: fqe.Wavefunction,
     for ii in range(10):
         work = evolve_s2_trotter(work, wvals[ii] * t, h0, h1)
     return work
+
+def old_eigth_order(work: fqe.Wavefunction,
+                    t: float,
+                    h0: RestrictedHamiltonian,
+                    h1: Union[RestrictedHamiltonian, DiagonalCoulomb]):
+    wvals = np.array([[0.11699135019217642180722881433533, 0.12581718736176041804392391641587, 
+                       0.12603912321825988140305670268365, 0.11892905625000350062692972283951, 
+                       0.11317848435755633314700952515599, -0.24445266791528841269462171413216, 
+                       -0.23341414023165082198780281128319, 0.35337821052654342419534541324080, 
+                       0.10837408645835726397433410591546, 0.10647728984550031823931967854896]])
+    w_0 = 1. - 2. * np.sum(wvals) 
+    for ii in range(9, -1, -1):
+        work = evolve_s2_trotter(work, wvals[ii] * t, h0, h1)
+    work = evolve_s2_trotter(work, w_0 * t, h0, h1)
+    for ii in range(10):
+        work = evolve_s2_trotter(work, wvals[ii] * t, h0, h1)
+    return work
+
+
 
 def exact_then_berry_u_inverse(work: fqe.Wavefunction,
                                t: float,
@@ -167,6 +186,52 @@ def berry_delta_action(work: fqe.Wavefunction,
     print("exact u time ", end_time - start_time)
 
     return product_wf - exact_wf
+
+def old_eight_order_delta_action(work: fqe.Wavefunction,
+                       t: float,
+                       full_ham: RestrictedHamiltonian,
+                       h0: RestrictedHamiltonian,
+                       h1: RestrictedHamiltonian,
+                       **apply_unitary_kwargs
+                       ):
+    
+    if work.norm() - 1. > NORM_ERROR_RESOLUTION:
+        print(f"{work.norm()=}", f"{(work.norm() - 1.)=}")
+        raise RuntimeError("Input wavefunction wrong norm")
+
+    start_time = time.time()
+    product_wf = old_eigth_order(work, t, h0, h1)
+    end_time = time.time()
+    print("old-8 u time ", end_time - start_time)
+
+    if product_wf.norm() - 1. >  NORM_ERROR_RESOLUTION:
+        print(f"{product_wf.norm()=}", f"{(product_wf.norm() - 1.)=}")
+        raise RuntimeError("Evolution did not converge")
+
+    start_time = time.time()
+    if h0.quadratic() and isinstance(h1, DiagonalCoulomb):
+        exact_wf = quad_and_diag_coulomb_apply_unitary_wrapper(base=work,
+                                         time=t,
+                                         algo='taylor',
+                                         quad_ham=h0,
+                                         diag_coulomb=h1,
+                                         accuracy = 1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         **apply_unitary_kwargs
+                                         )
+    else:
+        exact_wf = apply_unitary_wrapper(base=work,
+                                         time=t,
+                                         algo='taylor',
+                                         ops=full_ham,
+                                         accuracy = 1.0E-20,
+                                         expansion=MAX_EXPANSION_LIMIT,
+                                         **apply_unitary_kwargs)
+    end_time = time.time()
+    print("exact u time ", end_time - start_time)
+
+    return product_wf - exact_wf
+
 
 def berry_deltadagdelta_action(work: fqe.Wavefunction,
                          t: float,
